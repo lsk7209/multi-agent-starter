@@ -40,13 +40,13 @@ claude-main이 "내부 추론"과 같은 모델이라도 별도 호출이므로 
 
 ```yaml
 workers_approved:
-  - worker: codex-main
+  - worker: claude-main
     approved_at: <YYYY-MM-DD>      # 승인 당시 날짜로 교체
-    purpose: 코드 구현 및 테스트
+    purpose: 메인 코드 구현 및 디버깅
     approved_by: user
   - worker: codex-critic
     approved_at: <YYYY-MM-DD>
-    purpose: 설계 문서 비평
+    purpose: claude-main 산출물 리뷰·비평
     approved_by: user
 ```
 

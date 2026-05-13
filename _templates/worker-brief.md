@@ -45,5 +45,5 @@ sources: tasks/<task-name>/sources/<file>
 
 ```
 # 선행 worker 결과가 있으면 경로만 명시
-codex-main result: tasks/<task-name>/workers/codex-main/result.md
+claude-main result: tasks/<task-name>/workers/claude-main/result.md
 ```

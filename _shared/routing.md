@@ -5,17 +5,17 @@
 ```
 작업 성격 파악
 │
-├── 코드 작성 / 수정 / 테스트 / 이미지 생성?
+├── 메인 코딩 / 디버깅 / 기획 · 설계 · 요구사항 · 전략 · 문서화?
+│   └── claude-main
+│
+├── claude-main 산출물 리뷰 / 비판적 검증?
+│   └── codex-critic   (Codex의 주된 역할)
+│
+├── 보조 구현 / 코드 분석 / 테스트 / 이미지 생성?
 │   └── codex-main
 │
-├── claude-main 산출물 검증 / 비판적 리뷰?
-│   └── codex-critic
-│
-├── 이미지 · 스크린샷 분석 / 50페이지+ 문서 / 독립 검토?
+├── 이미지 · 스크린샷 분석 / 50페이지+ 문서 / 제3자 시각의 검토?
 │   └── gemini
-│
-├── 기획 · 설계 · 요구사항 · 전략 · 문서화?
-│   └── claude-main
 │
 └── 판단 어려움?
     └── claude-main으로 시작 후 필요 시 추가
@@ -28,23 +28,23 @@
 1. **선행 의존성 우선**: codex-critic은 claude-main 결과 필요 → 항상 후행
 2. **Orchestrator 내부 추론 우선**: 별도 worker 호출 전에 orchestrator 자체 추론으로 해결 가능한지 먼저 판단. 그래도 부족할 때만 claude-main 호출 (claude-main도 비용·쿼터 대상)
 3. **검증은 한 번만**: codex-critic은 작업당 1회 원칙. 재호출은 검증 실패 시만
-4. **gemini는 명시적 트리거 시만**: 멀티모달 또는 "독립 검토 필요" 명시 없으면 호출 금지
+4. **gemini는 명시적 트리거 시만**: 멀티모달 또는 "제3자 시각의 검토 필요" 명시 없으면 호출 금지
 
 ## 병렬 / 순차 정책
 
 | 패턴 | 적용 |
 |------|------|
-| 순차 (Pipeline) | 기본. claude-main → codex-critic → codex-main 처럼 결과 인계 |
-| 병렬 (Parallel) | 서로 독립된 산출물일 때만. 예: codex-main(코드) + gemini(이미지 분석) |
-| 금지 | 같은 입력에 같은 종류 worker 동시 호출 (예: codex-main 2개) |
+| 순차 (Pipeline) | 기본. claude-main → codex-critic → claude-main 처럼 결과 인계 |
+| 병렬 (Parallel) | 서로 독립된 산출물일 때만. 예: claude-main(코드) + gemini(이미지 분석) |
+| 금지 | 같은 입력에 같은 종류 worker 동시 호출 (예: claude-main 2개) |
 
 병렬 호출 시: 각 worker `brief.md`에 다른 worker 결과를 참조하지 않음을 명시.
 
 ## Worker 역할 상세
 
 ### claude-main
-- **용도**: 기획, 요구사항 정의, 설계 문서, 사용자 스토리, 아키텍처, 전략 수립
-- **결과물**: Markdown 문서, 구조도, 의사결정 근거
+- **용도**: 메인 코딩, 디버깅, 기획, 요구사항 정의, 설계 문서, 사용자 스토리, 아키텍처, 전략 수립
+- **결과물**: 코드 (구현·수정·diff), 설계 문서, 구조도, 의사결정 근거
 - **호출 명령** (예시 — 환경에 맞게 조정):
   ```bash
   claude --print "$(cat tasks/<task>/workers/claude-main/brief.md)" \
@@ -55,27 +55,28 @@
 - ※ Orchestrator의 내부 추론과 다름.
 
 ### codex-main
-- **용도**: 코드베이스 분석, 구현, 리팩토링, 테스트 작성, diff 생성, 로컬 CLI 검증, 이미지 생성 (Codex 내장 `image_gen` 도구)
+- **용도**: 보조 구현 (claude-main 산출물 기반), 코드베이스 분석, 리팩토링, 테스트 작성, diff 생성, 로컬 CLI 검증, 이미지 생성 (Codex 내장 `image_gen` 도구)
 - **결과물**: 코드, diff, 테스트 결과, CLI 출력, PNG/SVG 이미지
 - **호출 명령**: `mcp__codex__codex` MCP 도구
   - `prompt`: brief.md 내용 그대로 전달
-  - `cwd`: brief.md의 `target_repo` 값 (없으면 `tasks/<task>/`)
-  - `sandbox`: `workspace-write` (외부 쓰기 승인 시) / `read-only` (기본)
+  - `cwd`:
+    - 기본: `~/VSCodeWorkspace/MultiAgent/tasks/<task>/` — 이 안에서 산출물·diff 직접 작성
+    - 외부 쓰기 4조건 충족 시: brief.md의 `target_repo` 값으로 변경
+  - `sandbox`: `workspace-write` 고정 (cwd 내부만 쓰기 가능. cwd 밖은 sandbox가 차단)
   - `approval-policy`: `on-failure` 권장
-- **brief 필수 필드**:
+- **brief 필수 필드** (오케스트레이터가 사용자에게 target_repo를 먼저 묻고 답을 받아 채운다 — 분석·리뷰·요약 작업은 예외):
   ```yaml
-  target_repo: /absolute/path/to/repo    # 작업 대상 절대 경로
-  write_scope: src/** | tests/** | none  # 쓰기 허용 패턴 또는 'none'
+  target_repo: /absolute/path/to/repo    # 작업 대상 절대 경로 (없으면 N/A)
+  write_scope: src/** | tests/** | none  # 외부 repo 쓰기 허용 패턴 또는 'none'
   ```
 - **비용**: 있음 (Codex 호출 쿼터) → 승인 필요
 - **파일 쓰기**:
-  - 기본: `tasks/<task>/` 내부 산출물·diff만 작성
-  - `target_repo`/`write_scope` + 사용자 승인 시: 해당 scope 내 직접 쓰기 허용
-  - 4가지 조건 (CLAUDE.md "Worker 파일 쓰기 정책" 참조) 충족 필수
-- **참고**: `codex` CLI (`codex exec ...`)는 anti-api 프록시(:8964)를 거쳐 Claude/Gemini로 라우팅되므로 진짜 Codex 능력(이미지 생성 등) 안 씀. 반드시 MCP 호출 사용.
+  - 기본: cwd=`tasks/<task>/` + sandbox=`workspace-write` → 작업 폴더 내부 산출물·diff 직접 작성 가능 (외부 repo는 sandbox가 막음)
+  - 외부 repo 쓰기 4조건 (CLAUDE.md "Worker 파일 쓰기 정책" 참조) 모두 충족 시에만 cwd를 `target_repo`로 변경하여 해당 scope 내 직접 쓰기 허용
+  - 어느 경우에도 `_shared/`, `_templates/`, 다른 작업 폴더는 쓰지 말 것
 
 ### codex-critic
-- **용도**: claude-main 산출물을 실제 repo/파일/CLI 관점에서 비평. 실현 가능성, 비용, 테스트 커버리지, 사이드 이펙트 검토
+- **용도**: claude-main 산출물(주로 코드·설계)을 실제 repo/파일/CLI 관점에서 리뷰·비평. 실현 가능성, 비용, 테스트 커버리지, 사이드 이펙트 검토. **Codex의 주된 역할.**
 - **선행 조건**: claude-main `result.md` 존재 필수
 - **결과물**: 비평 리스트, 수정 제안
 - **호출 명령**: codex-main과 동일 (`mcp__codex__codex` MCP). 단 다음 강제:
@@ -86,7 +87,7 @@
 - **파일 쓰기**: ❌ 직접 X. Orchestrator 경유
 
 ### gemini
-- **용도**: 이미지/스크린샷/다이어그램 분석, 50페이지+ 문서 스캔, 독립 second opinion
+- **용도**: 이미지/스크린샷/다이어그램 분석, 50페이지+ 문서 스캔, 제3자 시각의 검토
 - **결과물**: 분석 텍스트, 요약
 - **호출 명령** (예시 — MCP):
   ```
@@ -103,9 +104,10 @@
 | 작업 유형 | 권장 최소 set |
 |----------|------------|
 | 문서/기획만 | claude-main |
-| 코드 구현 | codex-main |
-| 설계 후 구현 | claude-main → codex-main |
-| 설계 검증 포함 | claude-main → codex-critic → codex-main |
+| 코드 구현 | claude-main |
+| 설계 후 구현 | claude-main (설계·구현 일괄) |
+| 구현 + 비평 | claude-main → codex-critic → claude-main (반영) |
+| 보조 구현 / 이미지 생성 | codex-main |
 | 대용량 문서 처리 | gemini |
 | 전체 검토 | claude-main → codex-critic |
 
@@ -115,4 +117,4 @@
 
 - 이미 있는 worker 결과로 해결 가능하면 추가 호출 금지
 - 이전 결과가 검증 미통과 시에만 동일 worker 재호출 가능
-- gemini는 "독립 검토"가 명시적으로 필요할 때만
+- gemini는 "제3자 시각의 검토"가 명시적으로 필요할 때만

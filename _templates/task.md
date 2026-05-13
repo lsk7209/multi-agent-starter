@@ -35,7 +35,7 @@ priority: medium  # high | medium | low
 # 모든 worker는 사용 전 승인 필요. 비어있으면 호출 금지.
 workers_approved: []
 # 승인 예시:
-# - worker: codex-main
+# - worker: claude-main
 #   approved_at: <YYYY-MM-DD>
 #   purpose: 구체적 목적
 #   approved_by: user

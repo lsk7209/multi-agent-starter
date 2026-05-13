@@ -27,10 +27,23 @@ tasks/<task-name>/
 TASK=my-task-name
 ROOT=~/VSCodeWorkspace/MultiAgent
 mkdir -p "$ROOT/tasks/$TASK"
-cp "$ROOT/_templates/task.md" "$ROOT/tasks/$TASK/task.md"
-cp "$ROOT/_templates/log.md"  "$ROOT/tasks/$TASK/log.md"
-touch "$ROOT/tasks/$TASK/context.md"
+cp "$ROOT/_templates/task.md"    "$ROOT/tasks/$TASK/task.md"
+cp "$ROOT/_templates/log.md"     "$ROOT/tasks/$TASK/log.md"
+cp "$ROOT/_templates/context.md" "$ROOT/tasks/$TASK/context.md"
 ```
+
+### Step 1.5: target_repo 확인 (외부 산출물 작업인 경우)
+
+codex-main이 planned_workers에 포함되거나 코드·문서·이미지를 만드는 작업이면, task.md 채우기 전에 사용자에게 짧게 묻는다:
+
+> "이 작업의 산출물이 들어갈 외부 폴더(target_repo)가 있나요?
+> (예: ~/VSCodeWorkspace/mat. 없으면 tasks/<task>/artifacts/에 diff로 남깁니다)"
+
+답을 task.md의 메모 또는 후속 brief.md의 `target_repo` 필드에 기록한다.
+
+**예외 (묻지 않음)**:
+- 분석·리뷰·요약·기획만 하는 작업 (gemini 단독 또는 claude-main 단독 문서 작성)
+- 사용자가 자연어 요청에 이미 target_repo 경로를 포함한 경우
 
 ### Step 2: task.md 채우기
 
@@ -56,7 +69,7 @@ mkdir -p "$ROOT/tasks/$TASK/sources"
 
 #### 5-1. brief 먼저 생성·작성
 ```bash
-ROLE=codex-main  # 또는 claude-main, codex-critic, gemini
+ROLE=claude-main  # 또는 codex-main, codex-critic, gemini
 mkdir -p "$ROOT/tasks/$TASK/workers/$ROLE"
 cp "$ROOT/_templates/worker-brief.md" "$ROOT/tasks/$TASK/workers/$ROLE/brief.md"
 # brief.md 작성 (≤ 1200자/240단어)
@@ -77,17 +90,24 @@ wc -w "$ROOT/tasks/$TASK/workers/$ROLE/brief.md"   # 영문 단어수 ≤ 240
 
 #### 5-3. worker 호출 (`_shared/routing.md`의 호출 명령 참조)
 
-- **claude-main / gemini**: Orchestrator가 MCP 도구 호출 후 응답을 받음
+- **claude-main**: `claude --print` CLI로 별도 세션 호출. Orchestrator가 응답을 `result.md`에 기록
+  ```bash
+  claude --print "$(cat tasks/<task>/workers/claude-main/brief.md)" \
+    > tasks/<task>/workers/claude-main/result.md
+  ```
+- **gemini**: `mcp__gemini__*` 또는 `mcp__gemini-pro__*` MCP 도구 호출. Orchestrator가 응답을 `result.md`에 기록
 - **codex-main / codex-critic**: `mcp__codex__codex` MCP 도구 호출
   - `prompt`: brief.md 내용 그대로
-  - `cwd`: brief.md의 `target_repo` 값 (없으면 `~/VSCodeWorkspace/MultiAgent/tasks/<task>/`)
+  - `cwd`:
+    - codex-main 기본: `~/VSCodeWorkspace/MultiAgent/tasks/<task>/` (작업 폴더 안에서 산출물 작성)
+    - codex-main 외부 쓰기 4조건 충족 시: brief.md의 `target_repo` 값
+    - codex-critic: brief.md의 `target_repo` 값 (비평 대상 repo 컨텍스트)
   - `sandbox`:
-    - codex-main: `workspace-write` (외부 쓰기 승인 시) / `read-only` (기본)
+    - codex-main: `workspace-write` 고정 (cwd 내부만 쓰기 가능. 외부 repo 쓰기는 cwd를 `target_repo`로 변경한 경우에만 해당 패턴 내 쓰기)
     - codex-critic: `read-only` 고정
   - `approval-policy`: `on-failure` 권장
-- **codex-main 외부 repo 쓰기 조건**: `target_repo` + `write_scope` 명시 + `task.md`의 `workers_approved`에 외부 쓰기 승인 기록 + `log.md`에 `[APPROVAL]` 별도 기록 (4개 모두 충족 시에만)
-- 위 조건 미충족 시 `tasks/<task>/artifacts/`에 diff·patch 형태로 산출하고 사용자가 직접 적용
-- ⚠️ `codex` CLI (`codex exec`)는 anti-api 프록시 경유라 진짜 Codex 능력 안 쓰임. 반드시 MCP 사용.
+- **codex-main 외부 repo 쓰기 조건**: `target_repo` + `write_scope` 명시 + `task.md`의 `workers_approved`에 외부 쓰기 승인 기록 + `log.md`에 `[APPROVAL]` 별도 기록 (4개 모두 충족 시에만 cwd를 `target_repo`로 변경)
+- 위 조건 미충족 시 cwd는 작업 폴더로 두고, codex-main이 `tasks/<task>/artifacts/`에 diff·patch 형태로 산출. 사용자가 직접 적용
 
 #### 5-4. result.md 생성
 **worker 응답을 받은 후** 생성 (사전 빈 파일 생성 금지):

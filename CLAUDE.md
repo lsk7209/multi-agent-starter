@@ -5,10 +5,10 @@
 ```
 Orchestrator (Claude Code session, internal reasoning)
 └── Worker Pool (모두 외부 호출 — 승인 필요)
-    ├── claude-main    기획 · 설계 · 요구사항 · 문서 · 전략
-    ├── codex-main     코드 분석 · 구현 · 테스트 · diff · 로컬 검증
-    ├── codex-critic   산출물 비평 (repo/CLI/파일/비용/테스트 관점)
-    └── gemini         멀티모달 · 긴 문서 · 독립 second opinion
+    ├── claude-main    메인 코딩 · 디버깅 · 설계 · 아키텍처 · 전략
+    ├── codex-main     보조 구현 · 코드 분석 · 테스트 · diff · 로컬 검증 · 이미지 생성
+    ├── codex-critic   산출물 리뷰·비평 (Codex의 주된 역할)
+    └── gemini         멀티모달 · 긴 문서 · 제3자 시각의 검토
 ```
 
 **중요**: Orchestrator의 내부 추론은 worker가 아님. claude-main worker 호출은 별도 모델 호출이므로 승인·쿼터 대상.
@@ -17,12 +17,16 @@ Orchestrator (Claude Code session, internal reasoning)
 
 1. `tasks/<task-name>/task.md` 작성 (status: pending)
 2. `_shared/routing.md` 참조 → 최소 worker set 결정
-3. 모든 worker(claude-main 포함) 사용 시 `task.md`의 `workers_approved`에 명시적 기록 필요
-4. 각 worker에 `brief.md` 작성 (≤ 1200자 한글 / 240단어 영문)
-5. worker 실행 → `result.md` 저장
-6. `result.md`의 Verification Checklist 실행
-7. 검증 결과를 `log.md`에 append (`[VERIFICATION]` 태그)
-8. 완료 후 `_shared/learnings.md`에 재사용 교훈만 추가
+3. **target_repo 확인** (외부 산출물 작업인 경우):
+   - codex-main이 planned_workers에 포함되거나 코드·문서·이미지를 만드는 작업이면 사용자에게 `target_repo` 경로를 묻는다
+   - 사용자가 "없음"이라고 답하거나 분석·리뷰·요약·기획만 하는 작업이면 묻지 않고 `tasks/<task>/artifacts/`에 diff·patch로 산출
+   - 사용자가 자연어 요청에 이미 경로를 포함했으면 다시 묻지 않음
+4. 모든 worker(claude-main 포함) 사용 시 `task.md`의 `workers_approved`에 명시적 기록 필요
+5. 각 worker에 `brief.md` 작성 (≤ 1200자 한글 / 240단어 영문)
+6. worker 실행 → `result.md` 저장
+7. `result.md`의 Verification Checklist 실행
+8. 검증 결과를 `log.md`에 append (`[VERIFICATION]` 태그)
+9. 완료 후 `_shared/learnings.md`에 재사용 교훈만 추가
 
 ## Context Rules
 
