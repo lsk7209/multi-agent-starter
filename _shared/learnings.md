@@ -115,3 +115,8 @@
 **교훈**: gemini-3.1-pro-low vision이 JSON 토큰 배열을 출력할 때 페이지 후반 토큰이 잘릴 수 있다(이번엔 12번 문제 중간). timeout이 아니라 응답 길이 한계. 잘리면 같은 페이지 전체 이미지로 "X번 문제만 같은 형식으로" 부분 재요청하고 orchestrator에서 `\n\n` 토큰으로 이어붙이면 된다. crop 금지 규칙은 입력 이미지에 대한 것이지, 출력 분할 호출은 위배 아님.
 **근거**: 1차 호출에서 05~11 정상 + 12번 "두 정수 a" 토큰까지만 받고 끊김. 12번 단독 재호출(동일 페이지 전체 PNG, 출력 범위만 "12번 본문") 후 join하니 99개 토큰(text 57 / math 42)로 완성. 이후 hml-normalize는 "No changes" — vision 출력이 이미 canonical HML.
 **worker**: gemini-pro-low (응답 잘림), orchestrator (분할 재요청 + 토큰 머지)
+
+## [2026-05-15] [manual-final-review]
+**교훈**: `mcp__gemini-pro__*`(antigravity 프록시 :8080)가 `Proxy 400 INVALID_ARGUMENT`를 내면 프롬프트 크기 문제가 아니라 모델 티어 문제일 수 있다 — 압축 재시도로 시간 쓰지 말고 폴백 순서를 `gemini-3.1-pro-high → gemini-3.1-pro-low(같은 프록시, 종종 정상) → mcp__gemini__*(Flash 브리지)`로 단계 강등하라. 어느 경우든 model deviation을 result.md·리포트에 명시한다. gemini는 FS 접근이 없어 brief "경로 참조"가 안 통하므로 필요한 자료는 orchestrator가 MCP prompt에 직접 inline하고 그 사실을 brief·log에 적는다. FS 미접근 모델이 낸 *시스템 사실 주장*은 codex-critic/권위문서로 교차검증 후에만 채택한다(never-trust-upstream — 리뷰어 출력에도 동일 적용).
+**근거**: pro-high가 큰/압축 프롬프트 모두 동일 400. Flash는 1회 성공했으나 문서 우선순위를 오추정(task.md>context.md>log.md), 같은 프롬프트로 pro-low는 정상 동작하며 더 날카로운 비평을 냈다(같은 프록시인데 pro-high만 막힘). pro-low조차 매뉴얼 용도(런타임 미적재 사람용 문서)를 오판해 "이론=토큰낭비"라는 틀린 전제로 소절 삭제를 권고 → 사실검증으로 불채택했다.
+**worker**: gemini (프록시 장애·FS 미접근), codex-critic (사실 교차검증), orchestrator (폴백 강등·리뷰어 출력 검증)

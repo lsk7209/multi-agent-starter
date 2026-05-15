@@ -77,6 +77,12 @@ wc -w tasks/<task>/context.md   # 영문 단어수
 | codex-critic | ❌ Orchestrator 경유 | ❌ |
 | gemini | ❌ MCP 응답을 Orchestrator가 기록 | ❌ |
 
+### `write_scope` 값 정의
+
+- `none` — 쓰기 금지 (codex-critic 등 read-only 기본값)
+- `tasks-only` — `tasks/<task>/` 내부만 쓰기 (codex-main 기본 동작. 외부 repo는 안 건드림)
+- `"src/**, tests/**"` 같은 경로 패턴 — 외부 repo의 해당 경로만. 아래 4조건 모두 충족 시에만 유효
+
 ### codex-main 외부 repo 쓰기 조건 (모두 충족 필수)
 
 1. `brief.md`에 `target_repo: <절대 경로>` 명시

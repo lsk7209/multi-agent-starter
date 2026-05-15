@@ -25,7 +25,7 @@
 
 한 작업이 여러 분기에 해당할 때:
 
-1. **선행 의존성 우선**: codex-critic은 claude-main 결과 필요 → 항상 후행
+1. **선행 의존성 우선**: codex-critic은 리뷰 대상(보통 claude-main 결과)이 먼저 있어야 함 → 해당 산출물 뒤에 호출
 2. **Orchestrator 내부 추론 우선**: 별도 worker 호출 전에 orchestrator 자체 추론으로 해결 가능한지 먼저 판단. 그래도 부족할 때만 claude-main 호출 (claude-main도 비용·쿼터 대상)
 3. **검증은 한 번만**: codex-critic은 작업당 1회 원칙. 재호출은 검증 실패 시만
 4. **gemini는 명시적 트리거 시만**: 멀티모달 또는 "제3자 시각의 검토 필요" 명시 없으면 호출 금지
@@ -67,8 +67,8 @@
   - `approval-policy`: `on-failure` 권장
 - **brief 필수 필드** (오케스트레이터가 사용자에게 target_repo를 먼저 묻고 답을 받아 채운다 — 분석·리뷰·요약 작업은 예외):
   ```yaml
-  target_repo: /absolute/path/to/repo    # 작업 대상 절대 경로 (없으면 N/A)
-  write_scope: src/** | tests/** | none  # 외부 repo 쓰기 허용 패턴 또는 'none'
+  target_repo: /absolute/path/to/repo                   # 작업 대상 절대 경로 (없으면 N/A)
+  write_scope: none | tasks-only | "src/**, tests/**"   # none=쓰기금지 / tasks-only=tasks/<task>/ 내부만(codex-main 기본) / 패턴=외부 repo 해당 경로(외부는 4조건)
   ```
 - **비용**: 있음 (Codex 호출 쿼터) → 승인 필요
 - **파일 쓰기**:
@@ -77,8 +77,8 @@
   - 어느 경우에도 `_shared/`, `_templates/`, 다른 작업 폴더는 쓰지 말 것
 
 ### codex-critic
-- **용도**: claude-main 산출물(주로 코드·설계)을 실제 repo/파일/CLI 관점에서 리뷰·비평. 실현 가능성, 비용, 테스트 커버리지, 사이드 이펙트 검토. **Codex의 주된 역할.**
-- **선행 조건**: claude-main `result.md` 존재 필수
+- **용도**: 리뷰 대상 산출물(주로 claude-main 코드·설계, 또는 brief에 명시된 기존 코드·문서·소스)을 실제 repo/파일/CLI 관점에서 리뷰·비평. 실현 가능성, 비용, 테스트 커버리지, 사이드 이펙트 검토. **Codex의 주된 역할.**
+- **선행 조건**: 리뷰 대상 산출물 경로가 존재 — 보통 claude-main `result.md`, 또는 brief에 명시된 기존 코드·문서·소스
 - **결과물**: 비평 리스트, 수정 제안
 - **호출 명령**: codex-main과 동일 (`mcp__codex__codex` MCP). 단 다음 강제:
   - `sandbox`: `read-only` 고정 (쓰기 금지)
