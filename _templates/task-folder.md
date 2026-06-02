@@ -37,7 +37,7 @@ cp "$ROOT/_templates/context.md" "$ROOT/tasks/$TASK/context.md"
 codex-main이 planned_workers에 포함되거나 코드·문서·이미지를 만드는 작업이면, task.md 채우기 전에 사용자에게 짧게 묻는다:
 
 > "이 작업의 산출물이 들어갈 외부 폴더(target_repo)가 있나요?
-> (예: ~/VSCodeWorkspace/mat. 없으면 tasks/<task>/artifacts/에 diff로 남깁니다)"
+> (예: ~/projects/my-app. 없으면 tasks/<task>/artifacts/에 diff로 남깁니다)"
 
 답을 task.md의 메모 또는 후속 brief.md의 `target_repo` 필드에 기록한다.
 
