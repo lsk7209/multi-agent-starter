@@ -29,6 +29,12 @@ FLAVOR = {
         "forbidden_worker": "codex-critic",     # 자기검수 구조 = 비활성이어야
         "extra_files": [],
     },
+    "antigravity": {
+        "instruction": "AGENTS.md",            # agy가 자동 로드(spike S1 확인)
+        "main_worker": "claude-main",          # 메인 코더(교차 벤더)
+        "forbidden_worker": "gemini-critic",   # gemini 오케스트레이터 자기검수 금지
+        "extra_files": [],
+    },
 }
 
 TOPOLOGY = ("Pipeline", "Fan-out/Fan-in", "Expert Pool", "Producer-Reviewer")
@@ -80,9 +86,14 @@ def run_checks(target: Path, flavor: str) -> list[tuple[bool, str]]:
     miss_topo = [t for t in TOPOLOGY if t not in routing]
     check(not miss_topo, f"C5 토폴로지 4패턴 (없음: {miss_topo or '-'})")
 
-    # C6 gemini 백엔드 정책: backends.json의 gemini 워커가 cli/agy + pro-high (레코드 직접 검사)
-    c6_ok, c6_why = _gemini_policy_ok(read(target, "_shared/backends.json"))
-    check(c6_ok, f"C6 gemini 백엔드 agy/pro-high (backends.json) {('— ' + c6_why) if not c6_ok else ''}")
+    # C6 gemini 정책. claude/codex: gemini 워커가 cli/agy + pro-high. antigravity: 오케스트레이터가
+    # agy(Gemini Pro High)이므로 별도 gemini 워커 없음 — 지침이 agy/pro-high 오케스트레이터를 명시하는지.
+    if flavor == "antigravity":
+        c6_ok = ("Gemini 3.1 Pro High" in instr_txt) and (("agy" in instr_txt) or ("Antigravity" in instr_txt))
+        c6_why = "AGENTS.md가 agy/Gemini 3.1 Pro High 오케스트레이터 명시해야"
+    else:
+        c6_ok, c6_why = _gemini_policy_ok(read(target, "_shared/backends.json"))
+    check(c6_ok, f"C6 gemini 정책 {('— ' + c6_why) if not c6_ok else '(OK)'}")
 
     # C7 write_scope 값 일관 (tasks-only 가 지침/routing/brief에 존재)
     ws = all("tasks-only" in t for t in (instr_txt, routing, brief_tpl))

@@ -21,7 +21,7 @@ from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 TEMPLATES_DIR = SCRIPT_DIR / "templates"
-FLAVORS = ("claude", "codex")
+FLAVORS = ("claude", "codex", "antigravity")
 # 사용자 데이터 디렉토리 — 내용물은 절대 덮어쓰거나 지우지 않는다(.gitkeep만 보장).
 PRESERVE_DIRS = ("tasks", "_local")
 
@@ -86,7 +86,7 @@ def copy_template(template_dir: Path, target: Path, dry: bool) -> list[Path]:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="MultiAgent 시스템 생성기 (결정적 스캐폴더)")
-    ap.add_argument("--flavor", choices=FLAVORS, help="claude | codex (생략 시 메뉴)")
+    ap.add_argument("--flavor", choices=FLAVORS, help="claude | codex | antigravity (생략 시 메뉴)")
     ap.add_argument("--target", help="설치 대상 폴더 (생략 시 질문)")
     ap.add_argument("--yes", action="store_true", help="확인 프롬프트 생략")
     ap.add_argument("--no-validate", action="store_true", help="설치 후 validate 건너뜀")

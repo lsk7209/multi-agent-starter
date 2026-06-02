@@ -14,6 +14,7 @@
 |--------|----------------|---------|
 | `claude` | Claude Code 세션 | claude-main · codex-main · codex-critic · gemini |
 | `codex`  | Codex 세션 | codex-main · claude-critic · gemini |
+| `antigravity` | Antigravity 세션 (Gemini 3.1 Pro High) | claude-main · codex-main · codex-critic (멀티모달은 오케스트레이터 직접) |
 
 생성되는 시스템에 포함되는 것:
 
@@ -43,7 +44,7 @@ Claude Code·Codex 모두 **동일한 플러그인 흐름**이다:
 ### 직접(개발자) — 생성기 호출
 
 ```bash
-python3 generator/init.py --flavor <claude|codex> --target "<대상폴더>" --yes
+python3 generator/init.py --flavor <claude|codex|antigravity> --target "<대상폴더>" --yes
 ```
 
 설치가 끝나면 자동으로 `validate.py`가 돌며 PASS/FAIL을 보여준다.
@@ -97,7 +98,7 @@ multi-agent-starter/
 │   ├── init.py            # 결정적 생성기 (flavor·대상·tasks 보존·dry-run·guard)
 │   ├── validate.py        # flavor별 불변식 자가점검
 │   ├── build_zip.py       # 자립형 ZIP 빌더 (재현가능)
-│   └── templates/{claude,codex}/   # 두 flavor 정본
+│   └── templates/{claude,codex,antigravity}/   # 세 flavor 정본
 ├── .claude-plugin/marketplace.json # Claude Code 플러그인
 ├── .codex-plugin/plugin.json       # Codex 플러그인
 └── skills/configure-multiagent/    # "구성해줘" front door

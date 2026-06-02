@@ -12,7 +12,7 @@ templates/·validate.py를 찾으므로 한 폴더에 모이면 그대로 동작
     ├── README.txt        # 한글 quickstart
     ├── init.py           # generator/init.py 사본
     ├── validate.py       # generator/validate.py 사본
-    ├── templates/        # claude · codex 두 flavor
+    ├── templates/        # claude · codex · antigravity 세 flavor
     ├── run.command       # macOS 더블클릭용
     └── run.bat           # Windows 더블클릭용
 
@@ -149,7 +149,7 @@ def build(out_dir: Path, version: str) -> Path:
 
 
 def self_test(zip_path: Path) -> None:
-    """ZIP을 임시 폴더에 풀고 두 flavor를 실제 설치해 validate까지 통과하는지 확인."""
+    """ZIP을 임시 폴더에 풀고 세 flavor를 실제 설치해 validate까지 통과하는지 확인."""
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
         with zipfile.ZipFile(zip_path) as zf:
@@ -161,7 +161,7 @@ def self_test(zip_path: Path) -> None:
         if not init_py.is_file():
             sys.exit(f"[self-test FAIL] ZIP 안에 init.py 없음: {init_py}")
 
-        for flavor in ("claude", "codex"):
+        for flavor in ("claude", "codex", "antigravity"):
             target = tmp_path / f"out-{flavor}"
             rc = subprocess.run(
                 [sys.executable, str(init_py), "--flavor", flavor,
@@ -191,7 +191,7 @@ def main() -> None:
     print(f"  빌드 완료: {zip_path}  ({size_kb:.1f} KB)")
 
     if not args.no_self_test:
-        print("  자가검증(추출 → 두 flavor 설치 → validate)...")
+        print("  자가검증(추출 → 세 flavor 설치 → validate)...")
         self_test(zip_path)
         print("  자가검증 통과.")
 

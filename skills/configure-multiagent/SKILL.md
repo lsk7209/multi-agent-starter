@@ -13,13 +13,14 @@ description: Use when the user wants to set up / scaffold / install a file-based
 1. **flavor 확인** — 사용자에게 묻는다(또는 현재 호스트로 제안):
    - `claude` — Claude Code 오케스트레이터 (워커: claude-main / codex-main / codex-critic / gemini)
    - `codex` — Codex 오케스트레이터 (워커: codex-main / claude-critic / gemini)
+   - `antigravity` — Antigravity 오케스트레이터 (Gemini 3.1 Pro High; 워커: claude-main / codex-main / codex-critic, 멀티모달은 오케스트레이터 직접)
 2. **대상 폴더 확인** — 어디에 설치할지 묻는다. (상위 폴더 오인 주의 — 정확한 경로를 확인받는다.)
 3. **생성기 위치** — 이 플러그인에 함께 설치된 `generator/init.py`:
    - Claude Code: `"$CLAUDE_PLUGIN_ROOT/generator/init.py"`
    - Codex/기타: 이 플러그인 루트의 `generator/init.py` (스킬 기준 `../../generator/init.py`)
 4. **실행** — 확인 후:
    ```bash
-   python3 "<plugin-root>/generator/init.py" --flavor <claude|codex> --target "<대상폴더>" --yes
+   python3 "<plugin-root>/generator/init.py" --flavor <claude|codex|antigravity> --target "<대상폴더>" --yes
    ```
    대화형으로 진행하려면 인자 없이 실행하면 메뉴가 뜬다.
 5. **결과 보고** — `init.py`가 끝에 `validate.py`를 자동 실행한다. 그 **PASS/FAIL을 그대로 사용자에게 보고**한다. FAIL이 하나라도 있으면 "완료"라고 말하지 말 것.
