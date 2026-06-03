@@ -116,11 +116,21 @@
 
 | flavor | L1 구조 | L2 스모크 | L3 기능 | L4 안전 | 설치경로 검증 | 승인 |
 |--------|---------|-----------|---------|---------|---------------|------|
-| claude | ☐ | ☐ | ☐ | ☐ | gen ☐ / plugin ☐ / zip ☐ | ☐ |
-| codex | ☐ | ☐ | ☐ | ☐ | gen ☐ / plugin ☐ / zip ☐ | ☐ |
-| antigravity | ☐ | ☐ | ☐ | ☐ | gen ☐ / plugin ☐ / zip ☐ | ☐ |
+| claude | ✅ | ✅ | ☐ | ⚠️자동만 | gen ✅ / plugin ☐ / zip ☐ | ☐ |
+| codex | ✅ | ✅ | ☐ | ⚠️자동만 | gen ✅ / plugin ☐ / zip ☐ | ☐ |
+| antigravity | ✅ | ✅ | ☐ | ⚠️자동만 | gen ✅ / plugin ☐ / zip ☐ | ☐ |
+
+> **2026-06-03 검증 기록** (로컬, generator 경로):
+> - **L1 구조**: 3 flavor 모두 `validate` PASS(claude 10 / codex 11 / antigravity 12), `tests/run.sh` ALL PASS.
+> - **L2 스모크**: 3 flavor 모두 생성 폴더를 해당 호스트에서 열어 "규칙 요약" 시 지침 자동 로드 + 승인게이트·log태그·컨텍스트한도·워커풀·외부쓰기4조건을 정확히 답함.
+>   - claude: `CLAUDE.md`, codex 워커 = **MCP**(`mcp__codex`, 프로젝트 `.mcp.json` 동봉).
+>   - codex: `AGENTS.md`, 워커 = claude-critic·gemini (codex-critic 비활성).
+>   - antigravity: `AGENTS.md`, codex 워커 = **CLI**(`codex exec`). **실증**: Antigravity는 프로젝트-로컬 `.mcp.json`을 안 읽고 전역 `~/.gemini/antigravity-ide/mcp_config.json`만 봄 → CLI 기본이 유일한 zero-config 경로(설계 확정). codex MCP 전환은 그 전역 파일에 등록하는 1회성 업그레이드.
+> - **⚠️ 미검증**: L3 기능(실제 워커 호출·전체 라이프사이클), L4 수동 안전(승인게이트 *행동*·write_scope) — L4 자동분(디스패처 폴백/타임아웃/가드)은 `tests/`로 PASS. plugin/zip 설치경로(마켓플레이스는 머지 후), 호스트별 최종 승인.
 
 ### 미해결 의존성 (배포 전 닫아야)
-- [ ] PR #13 main 머지 → 마켓플레이스 설치 경로 검증 가능
-- [ ] antigravity 실설치 로딩 경로 확정 — `agy import` vs 루트 plugin.json vs skills/ 직접
+- [x] ~~antigravity 실설치 로딩 경로 확정~~ → **해결(2026-06-03)**: Antigravity는 폴더를 IDE에서 열면 `AGENTS.md`를 자동 로드(스모크 통과). 별도 루트 plugin.json 불요 = F1 핵심 닫힘. codex 워커는 CLI(`codex exec`)가 zero-config 기본.
+- [ ] PR #13 main 머지 → 마켓플레이스(plugin) 설치 경로 검증 가능 (현재 generator 경로만 검증됨)
+- [ ] L3 기능(실제 워커 호출·전체 라이프사이클) + L4 수동 안전(승인게이트 행동·write_scope) 호스트별 1회씩
+- [ ] zip 설치 경로 1회 검증
 - [ ] 각 호스트 워커 CLI/MCP 실제 PATH·인증 (사용자 환경)
