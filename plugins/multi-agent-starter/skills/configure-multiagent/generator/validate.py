@@ -97,7 +97,9 @@ def run_checks(target: Path, flavor: str) -> list[tuple[bool, str]]:
         c6_ok, c6_why = _gemini_policy_ok(read(target, "_shared/backends.json"))
     check(c6_ok, f"C6 gemini 정책 {('— ' + c6_why) if not c6_ok else '(OK)'}")
 
-    # C6b antigravity 전용: 워커셋이 {claude-main,codex-main,codex-critic}이고 gemini 워커 호출 잔재 없음
+    # C6b antigravity 전용: 워커셋이 정확히 {claude-main,codex-main,codex-critic}이고
+    # gemini 워커 호출 잔재 없음. subset 검사는 워커 누락(예: codex-critic 빠짐)을 통과시키므로
+    # 정확집합으로 조인다. (schema 1 'workers' 맵 기준 — 스키마 전환 아님)
     if flavor == "antigravity":
         try:
             ws = set((json.loads(read(target, "_shared/backends.json") or "{}").get("workers") or {}).keys())
@@ -105,8 +107,9 @@ def run_checks(target: Path, flavor: str) -> list[tuple[bool, str]]:
             ws = set()
         tf = read(target, "_templates/task-folder.md") or ""
         no_gem = all("call_worker.sh gemini" not in t for t in (routing, tf, instr_txt))
-        set_ok = (ws <= {"claude-main", "codex-main", "codex-critic"}) and ("claude-main" in ws)
-        check(no_gem and set_ok, f"C6b 워커셋 {sorted(ws)} + gemini 워커 호출 잔재 없음")
+        set_ok = ws == {"claude-main", "codex-main", "codex-critic"}
+        check(no_gem and set_ok,
+              f"C6b 워커셋 {sorted(ws)} == 정확집합 {{claude-main,codex-main,codex-critic}} + gemini 워커 호출 잔재 없음")
 
     # C7 write_scope 값 일관 (tasks-only 가 지침/routing/brief에 존재)
     ws = all("tasks-only" in t for t in (instr_txt, routing, brief_tpl))
@@ -217,7 +220,10 @@ def _backends_problems(raw: str, flavor: str, target: Path) -> list[str]:
     return p
 
 
-REPO_ROOT = SCRIPT_DIR.parent  # validate.py는 generator/ 안 → 부모가 플러그인 repo 루트
+# 분리 레이아웃(#17066 대응): 플러그인 본체는 plugins/<name>/ 하위, 마켓 카탈로그는
+# git 루트(.claude-plugin/marketplace.json + .agents/plugins/marketplace.json)에 있다.
+PLUGIN_ROOT = SCRIPT_DIR.parents[2]   # generator → configure-multiagent → skills → 플러그인 루트
+CATALOG_ROOT = SCRIPT_DIR.parents[4]  # git 루트 (카탈로그·front-page)
 
 
 def _desc_text(rel: str, data: dict) -> str:
@@ -244,9 +250,11 @@ def _versions_with_holes(rel: str, data: dict) -> list:
     return [data.get("version")]
 
 
-def run_repo_checks(repo: Path) -> list[tuple[str, str]]:
+def run_repo_checks(catalog: Path, plugin: Path) -> list[tuple[str, str]]:
     """플러그인 repo 자체(배포 표면) 점검 — 생성 타깃이 아니라 매니페스트·레이아웃.
 
+    분리 레이아웃: 카탈로그(marketplace.json 2종)는 git 루트(catalog), 플러그인
+    매니페스트(plugin.json 2종)·skills/ 는 plugins/<name>/(plugin) 하위.
     PASS/FAIL/WARN 3-state. 루트 plugin.json(Antigravity 호스트)은 로딩 경로
     미확정이라 부재 시 WARN(KNOWN_ISSUES KI-2). 머지 전 실설치로 검증."""
     out: list[tuple[str, str]] = []
@@ -254,39 +262,66 @@ def run_repo_checks(repo: Path) -> list[tuple[str, str]]:
     def emit(status: str, msg: str) -> None:
         out.append((status, msg))
 
-    # 동봉 매니페스트(보장 호스트): Claude Code marketplace+plugin, Codex plugin
-    manifests = [
-        ".claude-plugin/marketplace.json",
-        ".claude-plugin/plugin.json",
-        ".codex-plugin/plugin.json",
-    ]
+    # 동봉 매니페스트(보장 호스트): Claude Code marketplace(루트 카탈로그)+plugin, Codex plugin.
+    # 라벨은 git 루트 기준 상대경로 — 아래에서 catalog / rel 로 읽는다.
+    mkt_rel = ".claude-plugin/marketplace.json"
+    plugin_rels = [str((plugin / d / "plugin.json").relative_to(catalog))
+                   for d in (".claude-plugin", ".codex-plugin")]
+    manifests = [mkt_rel] + plugin_rels
     loaded: dict[str, dict] = {}
     bad: list[str] = []
     for rel in manifests:
-        p = repo / rel
+        p = catalog / rel
         if not p.is_file():
             bad.append(f"{rel} 없음"); continue
         try:
             loaded[rel] = json.loads(p.read_text(encoding="utf-8"))
         except Exception as e:  # noqa: BLE001
             bad.append(f"{rel} JSON 파싱 실패({e})")
-    # R1 구조까지: marketplace plugins[] 비어있지 않고 각 항목 name·source·version, plugin.json은 name·version
-    mkt = loaded.get(".claude-plugin/marketplace.json", {})
+    # R1 구조까지: marketplace plugins[] 비어있지 않고 각 항목 name·source·version
+    # (로컬 "./" source는 실제 폴더 존재까지), plugin.json은 name·version
+    mkt = loaded.get(mkt_rel, {})
     mkt_plugins = mkt.get("plugins") or []
-    if ".claude-plugin/marketplace.json" in loaded:
+    if mkt_rel in loaded:
         if not mkt_plugins:
             bad.append("marketplace.plugins 비어있음")
         for i, pl in enumerate(mkt_plugins):
             miss = [k for k in ("name", "source", "version") if not (isinstance(pl, dict) and pl.get(k))]
             if miss:
                 bad.append(f"marketplace.plugins[{i}] 필드 누락{miss}")
-    for rel in (".claude-plugin/plugin.json", ".codex-plugin/plugin.json"):
+            src = pl.get("source") if isinstance(pl, dict) else None
+            if isinstance(src, str) and src.startswith("./") and not (catalog / src).is_dir():
+                bad.append(f"marketplace.plugins[{i}] source 폴더 없음({src})")
+    for rel in plugin_rels:
         d = loaded.get(rel)
         if d is not None:
             miss = [k for k in ("name", "version") if not d.get(k)]
             if miss:
                 bad.append(f"{rel} 필드 누락{miss}")
     emit("PASS" if not bad else "FAIL", f"R1 매니페스트 3종 valid+구조 ({bad[0] if bad else '-'})")
+
+    # R1b Codex 카탈로그(.agents/plugins/marketplace.json) — Codex 호스트가 소비.
+    # 스키마에 version 필드가 없어 R2(version 일관) 대상에서는 제외한다.
+    ab: list[str] = []
+    agents_cat = catalog / ".agents/plugins/marketplace.json"
+    if not agents_cat.is_file():
+        ab.append(".agents/plugins/marketplace.json 없음")
+    else:
+        try:
+            apl = json.loads(agents_cat.read_text(encoding="utf-8")).get("plugins") or []
+            if not apl:
+                ab.append("plugins 비어있음")
+            for i, pl in enumerate(apl):
+                miss = [k for k in ("name", "source") if not (isinstance(pl, dict) and pl.get(k))]
+                if miss:
+                    ab.append(f"plugins[{i}] 필드 누락{miss}")
+                src = pl.get("source") if isinstance(pl, dict) else None
+                path = src.get("path") if isinstance(src, dict) else None
+                if isinstance(path, str) and path.startswith("./") and not (catalog / path).is_dir():
+                    ab.append(f"plugins[{i}] source.path 폴더 없음({path})")
+        except Exception as e:  # noqa: BLE001
+            ab.append(f"JSON 파싱 실패({e})")
+    emit("PASS" if not ab else "FAIL", f"R1b Codex 카탈로그(.agents) 구조 ({ab[0] if ab else '-'})")
 
     # R2 version 존재 + 일관 (누락 None 도 실패 — discard 금지)
     allv = [v for rel in manifests if rel in loaded for v in _versions_with_holes(rel, loaded[rel])]
@@ -297,7 +332,7 @@ def run_repo_checks(repo: Path) -> list[tuple[str, str]]:
     emit("PASS" if r2_ok else "FAIL", f"R2 매니페스트 version 존재+일관 ({why})")
 
     # R3 공용 스킬 + frontmatter: 선두 --- 블록 안에 name·description
-    skill = repo / "skills/configure-multiagent/SKILL.md"
+    skill = plugin / "skills/configure-multiagent/SKILL.md"
     skill_txt = skill.read_text(encoding="utf-8") if skill.is_file() else ""
     fm = re.match(r"^---\n(.*?)\n---\n", skill_txt, re.S)
     fm_body = fm.group(1) if fm else ""
@@ -324,7 +359,7 @@ def run_repo_checks(repo: Path) -> list[tuple[str, str]]:
              f"R4 flavor {tmpl_flavors} 전부 각 매니페스트/스킬 서술에 광고 (누락: {gaps or '-'})")
 
     # R5 루트 plugin.json(Antigravity 호스트) — 로딩 경로 미확정이라 부재 시 WARN
-    emit("PASS" if (repo / "plugin.json").is_file() else "WARN",
+    emit("PASS" if (catalog / "plugin.json").is_file() else "WARN",
          "R5 루트 plugin.json (Antigravity 호스트; 부재 시 KI-2 — 머지 전 실설치 검증)")
 
     return out
@@ -339,8 +374,8 @@ def main() -> None:
     args = ap.parse_args()
 
     if args.repo_check:
-        rresults = run_repo_checks(REPO_ROOT)
-        print(f"  validate(repo): {REPO_ROOT}")
+        rresults = run_repo_checks(CATALOG_ROOT, PLUGIN_ROOT)
+        print(f"  validate(repo): {CATALOG_ROOT} (plugin: {PLUGIN_ROOT.relative_to(CATALOG_ROOT)})")
         failed = warned = 0
         for status, msg in rresults:
             print(f"   [{status}] {msg}")
