@@ -18,8 +18,34 @@ vault 한 곳만 고친다).
 [ -n "$KNOT_VAULT" ] && [ -d "$KNOT_VAULT" ] && echo OK || echo NO_VAULT
 ```
 
-`NO_VAULT`면 사용자에게 "`$KNOT_VAULT`가 설정돼 있지 않습니다 — vault 경로를 셸 환경변수로
-설정한 뒤 다시 시도하세요"라고 안내하고 **작업을 중단**한다(no-op). 경로를 추측하지 말 것.
+`OK`면 해당 verb로 진행한다. `NO_VAULT`면 verb를 실행하지 말고(no-op) **아래 setup을 제안**한다 —
+경로를 추측하거나 임의 폴더에 저장하지 말 것.
+
+## 0b. setup (게이트가 NO_VAULT일 때만)
+
+vault가 아직 없으므로 두 갈래를 제시하고 사용자가 고르게 한다:
+
+- **(a) 기존 vault 경로 사용** — 사용자가 이미 knot vault를 가지고 있으면 그 절대경로를 받는다.
+  존재하는 디렉토리인지 확인만 하고, 내용은 건드리지 않는다.
+- **(b) 빈 vault 새로 만들기** — 설치할 절대경로를 받아 **번들 스캐폴드를 그대로 복사**한다.
+  스캐폴드 정본 = 이 플러그인의 `…/configure-multiagent/generator/knot-vault/`
+  (schema·prompts·scripts·미러 3·빈 inbox/raw/wiki). 복사 후 그 경로에서 `git init`:
+
+  ```bash
+  cp -R "<플러그인>/skills/configure-multiagent/generator/knot-vault/." "<대상경로>/"
+  cd "<대상경로>" && git init
+  ```
+
+  스캐폴드 본문을 손으로 재작성하지 말 것 — 번들을 그대로 복사한다(단일 정본).
+
+두 갈래 모두 끝에 `$KNOT_VAULT`를 가리켜야 한다. **rc 파일을 자동 편집하지 말고**, 추가할 줄을
+보여주고 사용자가 직접 적용·재로딩하게 한다(비파괴):
+
+```bash
+echo 'export KNOT_VAULT="<선택한 경로>"' >> ~/.zshrc   # 사용자가 직접 실행, 셸에 맞게(.bashrc 등)
+```
+
+적용 뒤 새 셸에서 게이트를 다시 확인하고 원래 요청한 verb로 진행한다.
 
 ## 1. verb 분기 (사용자 요청으로 판단)
 
