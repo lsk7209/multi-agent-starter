@@ -31,15 +31,10 @@ INSTRUCTION_FILE = {"claude": "CLAUDE.md", "codex": "AGENTS.md", "antigravity": 
 # knot 자동층(--with-knot): 고정 스니펫을 대상 지침파일에만 주입. 마커로 멱등 재생성·제거 가능.
 KNOT_BLOCK = SCRIPT_DIR / "knot_block.md"
 KNOT_START, KNOT_END = "<!-- knot:start -->", "<!-- knot:end -->"
-# knot 능동층(--with-knot): 번들 스킬을 호스트 스킬 디스커버리 경로로 그대로 복사(결정적).
-# claude=`.claude/skills/`(확정 — `.claude/agents/`와 동일 규약). codex/antigravity의
-# 워크스페이스-로컬 스킬 자동로드 경로는 미확정 → 합리적 위치에 복사하되 한계는 README/Caveat로.
-KNOT_SKILL_SRC = SCRIPT_DIR / "knot-skill" / "SKILL.md"
-KNOT_SKILL_DEST = {
-    "claude": ".claude/skills/knot/SKILL.md",
-    "codex": ".codex/skills/knot/SKILL.md",
-    "antigravity": ".antigravity/skills/knot/SKILL.md",
-}
+# knot 능동 스킬은 플러그인 최상위 skills/knot/ 로 배포된다(configure-multiagent와 동일하게
+# 호스트가 네이티브 로드). 워크스페이스로 복사하지 않는다 — agy는 워크스페이스 스킬을 스캔하지
+# 않고 글로벌 플러그인 스킬만 로드하므로(검증: gemini가 가용 스킬 목록에 knot 확인). claude/codex도
+# 플러그인 스킬로 동일하게 로드된다. --with-knot은 passive 관리블록(자동층) 주입만 담당.
 
 
 def available_flavors() -> list[str]:
@@ -119,16 +114,6 @@ def inject_knot(target: Path, flavor: str, dry: bool) -> str:
     return f"knot 블록 {action} → {INSTRUCTION_FILE[flavor]}"
 
 
-def copy_knot_skill(target: Path, flavor: str, dry: bool) -> str:
-    """번들 knot 스킬(SKILL.md)을 호스트 스킬 경로로 그대로 복사. 결정적 — 모델 창작 없이
-    바이트 복사. 멱등: 재실행해도 같은 파일 1벌(덮어쓰기). target 폴더 한정."""
-    dest = target / KNOT_SKILL_DEST[flavor]
-    if not dry:
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(KNOT_SKILL_SRC, dest)
-    return f"knot 스킬 복사 → {KNOT_SKILL_DEST[flavor]}"
-
-
 def main() -> None:
     ap = argparse.ArgumentParser(description="MultiAgent 시스템 생성기 (결정적 스캐폴더)")
     ap.add_argument("--flavor", choices=FLAVORS, help="claude | codex | antigravity (생략 시 메뉴)")
@@ -167,7 +152,6 @@ def main() -> None:
 
     if args.with_knot:
         print(f"  {prefix}{inject_knot(target, flavor, dry=args.dry_run)}")
-        print(f"  {prefix}{copy_knot_skill(target, flavor, dry=args.dry_run)}")
 
     validate = SCRIPT_DIR / "validate.py"
     if not args.no_validate and not args.dry_run and validate.exists():

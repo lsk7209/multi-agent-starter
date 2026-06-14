@@ -19,9 +19,9 @@ description: Use when the user wants to set up / scaffold / install a file-based
 4. **knot 지식 vault 지원? (선택, 기본 미설치)** — `init.py` 실행 직전 한 번 묻는다:
    > "knot 지식 vault 지원도 같이 설치할까요? (선택 — 기본은 미설치)"
 
-   knot = 벤더중립 평문 마크다운 지식 vault. 설치하면 컨텍스트 파일에 관리블록 + `knot` 능동 스킬(save/ingest/query/lint)이 추가되고, 나중에 `$KNOT_VAULT`로 실제 vault에 연결한다. opt-in이라 확실치 않으면 **아니오**가 기본.
-   - **예** → 다음 실행 명령에 `--with-knot`를 붙인다.
-   - **아니오** → 플래그 없이 기존대로 진행.
+   knot = 벤더중립 평문 마크다운 지식 vault. `knot` 능동 스킬(save/ingest/query/lint)은 플러그인에 포함돼 어느 flavor(claude·codex·antigravity)에서든 이미 가용하고 `$KNOT_VAULT` 게이트로 동작한다. 여기서 **예**를 고르면 컨텍스트 파일에 관리블록(자동층)이 추가돼, 에이전트가 작업 중 관련되면 knot을 **알아서 참고**한다. opt-in이라 확실치 않으면 **아니오**(그래도 "knot에 저장" 같은 명시 요청엔 능동 스킬이 동작).
+   - **예** → 다음 실행 명령에 `--with-knot`를 붙인다(관리블록 주입).
+   - **아니오** → 플래그 없이 진행(능동 스킬은 그대로 가용, 관리블록만 생략).
 5. **실행** — 확인 후 (이 스킬 폴더의 generator 경로로):
    ```bash
    python3 "<이 스킬 폴더>/generator/init.py" --flavor <claude|codex|antigravity> --target "<대상폴더>" [--with-knot] --yes

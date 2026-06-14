@@ -16,11 +16,6 @@ GEN = REPO / "plugins" / "multi-agent-starter" / "skills" / "configure-multiagen
 FLAVORS = sorted(p.name for p in (GEN / "templates").iterdir() if p.is_dir())
 INSTRUCTION_FILE = {"claude": "CLAUDE.md", "codex": "AGENTS.md", "antigravity": "AGENTS.md"}
 KNOT_START, KNOT_END = "<!-- knot:start -->", "<!-- knot:end -->"
-KNOT_SKILL_DEST = {
-    "claude": ".claude/skills/knot/SKILL.md",
-    "codex": ".codex/skills/knot/SKILL.md",
-    "antigravity": ".antigravity/skills/knot/SKILL.md",
-}
 
 
 def run(args: list[str]) -> subprocess.CompletedProcess:
@@ -52,59 +47,39 @@ def validate_all_pass() -> int:
 
 
 def knot_checks() -> int:
-    """--with-knot 주입+복사 정확성 + 기본 부재 + 멱등성 + C11 결합 불변식(네거티브)."""
+    """--with-knot → 관리블록(C10) 주입 정확성 + 멱등성 + 기본 부재.
+    knot 능동 스킬은 플러그인 최상위 skills/knot/ 로 배포(생성물에 복사 안 함, 호스트 네이티브
+    로드) → 워크스페이스 스킬 파일 단언 없음."""
     fails = 0
-    bundle = (GEN / "knot-skill" / "SKILL.md").read_bytes()
     for f in FLAVORS:
         instr_name = INSTRUCTION_FILE[f]
-        skill_rel = KNOT_SKILL_DEST[f]
-        # 1) --with-knot → 블록 1개 + 스킬 파일 1벌(정본 일치) + validate(C10/C11) PASS
+        # 1) --with-knot → 관리블록 1개 + validate(C10) PASS
         with tempfile.TemporaryDirectory() as d:
             tgt = Path(d) / f"knot-{f}"
             if init(tgt, f, knot=True).returncode != 0:
                 print(f"  FAIL [{f}] init --with-knot exit nonzero"); fails += 1; continue
             txt = (tgt / instr_name).read_text(encoding="utf-8")
             block1 = txt.count(KNOT_START) == 1 and txt.count(KNOT_END) == 1
-            skill_p = tgt / skill_rel
-            skill_ok = skill_p.is_file() and skill_p.read_bytes() == bundle
             v = run([sys.executable, str(GEN / "validate.py"),
                      "--flavor", f, "--target", str(tgt)])
             vp = v.returncode == 0 and "전부 PASS" in v.stdout
-            ok = block1 and skill_ok and vp
-            print(f"  {'PASS' if ok else 'FAIL'} [{f}] --with-knot 블록+스킬 둘 다 생성 + validate PASS")
+            ok = block1 and vp
+            print(f"  {'PASS' if ok else 'FAIL'} [{f}] --with-knot 관리블록 1개 + validate PASS")
             fails += not ok
-            # 3) 멱등 — 재실행 → 블록 여전히 1개 + 스킬 여전히 1벌
+            # 2) 멱등 — 재실행 → 블록 여전히 1개
             init(tgt, f, knot=True)
             txt2 = (tgt / instr_name).read_text(encoding="utf-8")
-            idem = (txt2.count(KNOT_START) == 1 and txt2.count(KNOT_END) == 1
-                    and skill_p.is_file() and skill_p.read_bytes() == bundle)
-            print(f"  {'PASS' if idem else 'FAIL'} [{f}] --with-knot 멱등(블록 1개·스킬 1벌)")
+            idem = txt2.count(KNOT_START) == 1 and txt2.count(KNOT_END) == 1
+            print(f"  {'PASS' if idem else 'FAIL'} [{f}] --with-knot 멱등(블록 1개)")
             fails += not idem
-            # 4) C11 네거티브: 스킬만 지우면(블록만 잔존) validate FAIL이어야
-            skill_p.unlink()
-            v2 = run([sys.executable, str(GEN / "validate.py"),
-                      "--flavor", f, "--target", str(tgt)])
-            block_only_fail = v2.returncode != 0
-            print(f"  {'PASS' if block_only_fail else 'FAIL'} [{f}] C11 블록만(스킬 삭제) → FAIL 검출")
-            fails += not block_only_fail
-        # 2) 기본 init → 블록·스킬 둘 다 부재 + 5) C11 네거티브: 스킬만 추가하면 FAIL
+        # 3) 기본 init → 관리블록 부재
         with tempfile.TemporaryDirectory() as d:
             tgt = Path(d) / f"plain-{f}"
             init(tgt, f, knot=False)
             txt = (tgt / instr_name).read_text(encoding="utf-8")
-            skill_p = tgt / skill_rel
-            absent = (KNOT_START not in txt and KNOT_END not in txt
-                      and not skill_p.is_file())
-            print(f"  {'PASS' if absent else 'FAIL'} [{f}] 기본 init 블록·스킬 둘 다 부재")
+            absent = KNOT_START not in txt and KNOT_END not in txt
+            print(f"  {'PASS' if absent else 'FAIL'} [{f}] 기본 init 관리블록 부재")
             fails += not absent
-            # 스킬만 있고 블록 없는 상태 → C11 FAIL이어야
-            skill_p.parent.mkdir(parents=True, exist_ok=True)
-            skill_p.write_bytes(bundle)
-            v3 = run([sys.executable, str(GEN / "validate.py"),
-                      "--flavor", f, "--target", str(tgt)])
-            skill_only_fail = v3.returncode != 0
-            print(f"  {'PASS' if skill_only_fail else 'FAIL'} [{f}] C11 스킬만(블록 없음) → FAIL 검출")
-            fails += not skill_only_fail
     return fails
 
 

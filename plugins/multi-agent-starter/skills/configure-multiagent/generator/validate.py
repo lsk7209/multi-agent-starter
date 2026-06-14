@@ -45,13 +45,8 @@ LOG_TAGS = "DECISION | WORKER_CALL | VERIFICATION | ERROR | APPROVAL | COMPLETE"
 # knot 자동층(--with-knot로 주입). 미설치(마커 부재)는 정상 PASS.
 KNOT_BLOCK = SCRIPT_DIR / "knot_block.md"
 KNOT_START, KNOT_END = "<!-- knot:start -->", "<!-- knot:end -->"
-# knot 능동층(--with-knot로 복사). init.py KNOT_SKILL_DEST와 일치해야.
-KNOT_SKILL_SRC = SCRIPT_DIR / "knot-skill" / "SKILL.md"
-KNOT_SKILL_DEST = {
-    "claude": ".claude/skills/knot/SKILL.md",
-    "codex": ".codex/skills/knot/SKILL.md",
-    "antigravity": ".antigravity/skills/knot/SKILL.md",
-}
+# knot 능동 스킬은 플러그인 최상위 skills/knot/ 로 배포(호스트 네이티브 로드) — 생성물에 복사하지
+# 않으므로 워크스페이스 검증 대상 아님. C10(관리블록 정본)만 검사한다.
 
 
 def _knot_check(instr_txt: str) -> tuple[bool, str]:
@@ -71,25 +66,6 @@ def _knot_check(instr_txt: str) -> tuple[bool, str]:
     if m.group(0).strip("\n") != canonical:
         return False, "knot 블록 본문이 knot_block.md와 불일치"
     return True, "knot 블록 정본 일치"
-
-
-def _knot_combined_check(instr_txt: str, target: Path, flavor: str) -> tuple[bool, str]:
-    """C11: 자동층·능동층 결합 불변식 — 관리블록 존재 ⟺ knot 스킬 파일 존재.
-    둘 다 부재 = 미설치 정상 PASS. 둘 중 하나만 = 부분설치 FAIL. 둘 다 존재 시
-    스킬 파일이 번들 정본과 바이트 일치해야(결정적 복사 보증)."""
-    block = KNOT_START in instr_txt
-    dest_rel = KNOT_SKILL_DEST.get(flavor)
-    skill_path = (target / dest_rel) if dest_rel else None
-    skill = bool(skill_path and skill_path.is_file())
-    if not block and not skill:
-        return True, "관리블록·스킬 둘 다 부재(미설치 — 정상)"
-    if block != skill:
-        return False, f"부분설치 — 관리블록={block}, 스킬파일({dest_rel})={skill} (둘 다여야)"
-    if not KNOT_SKILL_SRC.is_file():
-        return False, "knot-skill 번들 부재(정본 SKILL.md 없음)"
-    if skill_path.read_bytes() != KNOT_SKILL_SRC.read_bytes():
-        return False, f"스킬 파일({dest_rel})이 번들 SKILL.md와 불일치"
-    return True, f"관리블록 + 스킬({dest_rel}) 둘 다 존재·정본 일치"
 
 
 def read(target: Path, rel: str) -> str | None:
@@ -180,10 +156,6 @@ def run_checks(target: Path, flavor: str) -> list[tuple[bool, str]]:
     # C10 knot 자동층(선택). 마커 부재 = 미설치 정상 PASS, 존재 시 짝·정본·중복 검사.
     k_ok, k_why = _knot_check(instr_txt)
     check(k_ok, f"C10 knot 관리블록 — {k_why}")
-
-    # C11 knot 결합 불변식(선택). 관리블록 ⟺ 스킬 파일. 둘 다 부재=PASS, 비대칭=FAIL.
-    kc_ok, kc_why = _knot_combined_check(instr_txt, target, flavor)
-    check(kc_ok, f"C11 knot 자동·능동층 결합 — {kc_why}")
 
     return results
 
