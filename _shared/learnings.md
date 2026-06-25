@@ -94,3 +94,8 @@
 **디버깅 방법론 교훈(값진 실패)**: ① 가설의 *substance*(agy=글로벌 로드)는 맞았으나 *경로*를 틀리게 봄(`~/.agents/skills/` ≠ 실제 `~/.gemini/config/plugins/`) → 정황증거로 결론 단정 말고 **실측으로 경로까지 확정**해야. ② **테스트 방식 자체가 틀리면 결론도 틀린다** — headless `agy -p` 단발 호출은 인증 불안정("not logged into Antigravity")·실행간 동작 불일치를 일으켜 오판을 키웠다. 결정타는 **agy 대화형 세션을 띄우고 gemini에게 "네 가용 스킬 목록 보여줘"라고 직접 물어본 것**("자기 시스템이니 그 정도는 안다"). 에이전트 자기보고 > 외부 추론. ③ 우회책(AGENTS.md 포인터)으로 빠지려 했으나, 사용자가 "configure-multiagent는 antigravity에서 되는데?"라는 반례로 정본 메커니즘(플러그인 스킬)을 가리켜줌 — **작동하는 예와 안 되는 예의 차이를 먼저 규명**하는 게 우회보다 빠르다.
 **근거**: live agy 세션에서 글로벌 경로에 knot 설치 후 Gemini 3.1 Pro가 `<skills>` 목록에 `configure-multiagent` + `knot` 둘 다 나열·확인. test_generate(3 flavor 관리블록 주입·멱등·기본부재) + run.sh ALL PASS. D9 갱신, C11 폐기.
 **worker**: orchestrator(systematic-debugging·라이브 agy probe·repo 리팩터·테스트)
+
+## [2026-06-24] 컷오프 이후 기능·경쟁자 주장은 1차 출처로 검증 (youtube-topic-2026-06-24)
+**교훈**: 영상 주제선정 중 두 번 "내 추론·2차 요약"이 틀릴 뻔함 → 둘 다 1차 출처로 잡음. ① **컷오프 이후 기능(`/goal`·Stop hook)은 공식 문서로 확인.** 메모리·노트북 요약으로 단정하니 "평가자 무조건 Haiku"(→설정가능)·"이미지 못 봄"(→문서에 없는 추론) 같은 과장이 나옴. 사용자가 "문서로 다 확인된거?"로 압박 → 재fetch해 정정. ② **경쟁 영상 주장은 yt-dlp로 자막 받아 직접 정독 > NotebookLM 요약(2차).** 세션1 노트북이 "개발동생=Loop Engineering 점유"라 기록했으나, 채널 직접 확인하니 그 제목은 Austin Marchese(해외)였고 개발동생 실제 영상은 다른 것. 자막 정독으로 경쟁 지형·인용문까지 정확히 확보.
+**근거**: WebFetch(code.claude.com/docs/en/goal) 원문 인용으로 평가자 사실 3건 정정. yt-dlp 자막 정독으로 Berman(F4a8aMLb678)·개발동생(QI1FNnUfiZg) 메커니즘·요금 미점유 직접 확인. 추론→문서/1차 전환 후 차별화 근거가 "추론"에서 "문서·실측"으로 단단해짐.
+**worker**: orchestrator(WebFetch·yt-dlp 자막·헤드리스 claude -p /goal 실측)
