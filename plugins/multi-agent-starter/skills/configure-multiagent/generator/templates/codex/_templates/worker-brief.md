@@ -9,7 +9,7 @@
 - 외과수술식 수정: 기존 스타일 유지, 무관 코드 비접촉
 - 사용자 대화 채널 없음: 가정은 명시하고, 불확실·불일치는 result의 Issues/Caveats에 표면화
 
-## Execution Context (codex-main / claude-critic 필수)
+## Execution Context (claude-main / codex-main / codex-critic 필수)
 
 ```yaml
 target_repo: /absolute/path/to/repo    # 작업 대상 절대 경로 (없으면 N/A)

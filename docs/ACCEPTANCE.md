@@ -124,7 +124,7 @@
 > - **L1 구조**: 3 flavor 모두 `validate` PASS(claude 10 / codex 11 / antigravity 12), `tests/run.sh` ALL PASS.
 > - **L2 스모크**: 3 flavor 모두 생성 폴더를 해당 호스트에서 열어 "규칙 요약" 시 지침 자동 로드 + 승인게이트·log태그·컨텍스트한도·워커풀·외부쓰기4조건을 정확히 답함.
 >   - claude: `CLAUDE.md`, codex 워커 = **MCP**(`mcp__codex`, 프로젝트 `.mcp.json` 동봉).
->   - codex: `AGENTS.md`, 워커 = claude-critic·gemini (codex-critic 비활성).
+>   - codex: `AGENTS.md`, 워커 = claude-main·codex-main·codex-critic·gemini.
 >   - antigravity: `AGENTS.md`, codex 워커 = **CLI**(`codex exec`). **실증**: Antigravity는 프로젝트-로컬 `.mcp.json`을 안 읽고 전역 `~/.gemini/antigravity-ide/mcp_config.json`만 봄 → CLI 기본이 유일한 zero-config 경로(설계 확정). codex MCP 전환은 그 전역 파일에 등록하는 1회성 업그레이드.
 > - **⚠️ 미검증**: L3 기능(실제 워커 호출·전체 라이프사이클), L4 수동 안전(승인게이트 *행동*·write_scope) — L4 자동분(디스패처 폴백/타임아웃/가드)은 `tests/`로 PASS. plugin/zip 설치경로(마켓플레이스는 머지 후), 호스트별 최종 승인.
 

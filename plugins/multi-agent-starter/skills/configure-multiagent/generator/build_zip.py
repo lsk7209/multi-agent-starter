@@ -72,7 +72,7 @@ MultiAgent 시스템 생성기 — 오프라인 ZIP 버전 (v{version})
 - claude : Claude Code가 오케스트레이터
            (워커: claude-main / codex-main / codex-critic / gemini)
 - codex  : Codex가 오케스트레이터
-           (워커: codex-main / claude-critic / gemini)
+           (워커: claude-main / codex-main / codex-critic / gemini)
 
 [안전]
 - 설치 폴더에 이미 tasks/ 또는 _local/ 작업 데이터가 있으면 지우지 않고

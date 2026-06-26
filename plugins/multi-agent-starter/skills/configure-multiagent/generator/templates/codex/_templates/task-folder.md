@@ -11,7 +11,7 @@ tasks/<task-name>/
 ├── log.md
 ├── sources/
 ├── workers/
-│   └── <role>/          # codex-main | claude-critic | gemini
+│   └── <role>/          # claude-main | codex-main | codex-critic | gemini
 │       ├── brief.md
 │       └── result.md
 └── artifacts/
@@ -63,12 +63,12 @@ mkdir -p "$ROOT/tasks/$TASK/sources"
 #### 5-1. brief 생성
 
 ```bash
-ROLE=claude-critic  # 또는 codex-main, gemini
+ROLE=codex-critic  # 또는 claude-main, codex-main, gemini
 mkdir -p "$ROOT/tasks/$TASK/workers/$ROLE"
 cp "$ROOT/_templates/worker-brief.md" "$ROOT/tasks/$TASK/workers/$ROLE/brief.md"
 ```
 
-`codex-main` / `claude-critic` 호출 시 brief 상단 필수:
+`claude-main` / `codex-main` / `codex-critic` 호출 시 brief 상단 필수:
 
 ```yaml
 target_repo: /absolute/path/to/repo
@@ -84,8 +84,9 @@ wc -w "$ROOT/tasks/$TASK/workers/$ROLE/brief.md"
 
 #### 5-3. worker 호출
 
-- **codex-main**: 현재 Codex 환경의 sub-agent/worker 기능 사용. 외부 `codex` CLI나 별도 bridge 실행이 필요하면 먼저 사용자 승인.
-- **claude-critic**: 승인된 Claude CLI/MCP/agent bridge만 사용. 실제 호출 전 도구·모델·비용 가능성을 밝히고 승인.
+- **claude-main**: 승인된 Claude CLI/MCP/agent bridge만 사용. AppsInToss 기획, 콘텐츠 전략, E-E-A-T 판단이 필요할 때 호출.
+- **codex-main**: 현재 Codex 환경의 sub-agent/worker 기능 사용. WordPress 반영, 스크립트, 이미지 생성, 로컬 검증이 필요할 때 호출.
+- **codex-critic**: read-only 비평가. 애드센스 정책 위반, 결함, 게시·배포 차단 요소를 찾을 때 호출.
 - **gemini**: `_shared/backends.json` 정본(백엔드 Antigravity `agy` CLI, 기본 `gemini-3.1-pro-high`). `bash _shared/adapters/call_worker.sh gemini <brief-file>` → JSON envelope. 이미지/긴 문서/제3자 검토가 명확할 때만, 승인 후.
 
 `codex-main` 외부 repo 쓰기 조건:

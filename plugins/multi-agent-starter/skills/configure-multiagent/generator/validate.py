@@ -27,8 +27,10 @@ FLAVOR = {
     },
     "codex": {
         "instruction": "AGENTS.md",
-        "main_worker": "claude-critic",         # 리뷰 워커(독립성)
-        "forbidden_worker": "codex-critic",     # 자기검수 구조 = 비활성이어야
+        "main_worker": "claude-main",           # 콘텐츠/SEO 기획 워커
+        "worker_pool": ["claude-main", "codex-main", "codex-critic", "gemini"],
+        "readonly_workers": ["claude-main", "codex-critic", "gemini"],
+        "forbidden_worker": None,
         "extra_files": [],
     },
     "antigravity": {
@@ -54,7 +56,7 @@ def _knot_check(instr_txt: str) -> tuple[bool, str]:
     (c)중복 마커 없음. 마커가 없으면 PASS(미설치 정상)."""
     starts, ends = instr_txt.count(KNOT_START), instr_txt.count(KNOT_END)
     if starts == 0 and ends == 0:
-        return True, "knot 마커 없음(미설치 — 정상)"
+        return True, "knot 마커 없음(미설치 - 정상)"
     if starts != 1 or ends != 1:
         return False, f"knot 마커 짝/중복 오류(start={starts}, end={ends})"
     m = re.search(re.escape(KNOT_START) + r".*?" + re.escape(KNOT_END), instr_txt, re.S)
@@ -120,7 +122,7 @@ def run_checks(target: Path, flavor: str) -> list[tuple[bool, str]]:
         c6_why = "AGENTS.md가 agy/Gemini 3.1 Pro High 오케스트레이터 명시해야"
     else:
         c6_ok, c6_why = _gemini_policy_ok(read(target, "_shared/backends.json"))
-    check(c6_ok, f"C6 gemini 정책 {('— ' + c6_why) if not c6_ok else '(OK)'}")
+    check(c6_ok, f"C6 gemini 정책 {('- ' + c6_why) if not c6_ok else '(OK)'}")
 
     # C6b antigravity 전용: 워커셋이 정확히 {claude-main,codex-main,codex-critic}이고
     # gemini 워커 호출 잔재 없음. subset 검사는 워커 누락(예: codex-critic 빠짐)을 통과시키므로
@@ -141,10 +143,23 @@ def run_checks(target: Path, flavor: str) -> list[tuple[bool, str]]:
     check(ws, "C7 write_scope tasks-only 분포 (지침/routing/brief)")
 
     # C8 flavor 워커풀 일관성
-    check(cfg["main_worker"] in routing, f"C8 주 워커 '{cfg['main_worker']}' routing에 존재")
+    pool = cfg.get("worker_pool")
+    if pool:
+        missing_pool = [
+            w for w in pool
+            if (w not in routing) or (w not in instr_txt) or (f'"{w}"' not in (read(target, "_shared/backends.json") or ""))
+        ]
+        check(not missing_pool, f"C8 콘텐츠/SEO 워커풀 4역할 존재 (없음: {missing_pool or '-'})")
+    else:
+        check(cfg["main_worker"] in routing, f"C8 주 워커 '{cfg['main_worker']}' routing에 존재")
     if cfg["forbidden_worker"]:
         active = (cfg["forbidden_worker"] in routing) or (cfg["forbidden_worker"] in instr_txt)
         check(not active, f"C8b 금지 워커 '{cfg['forbidden_worker']}' 활성 참조 없음")
+
+    readonly = cfg.get("readonly_workers") or []
+    if readonly:
+        readonly_problem = _readonly_worker_problems(read(target, "_shared/backends.json") or "", readonly)
+        check(not readonly_problem, f"C8c read-only 워커 쓰기 금지 (문제: {readonly_problem[0] if readonly_problem else '-'})")
 
     # C9 backends.json 어댑터 레지스트리 스키마 (구조 + api.ref 파일 존재)
     raw = read(target, "_shared/backends.json")
@@ -155,7 +170,7 @@ def run_checks(target: Path, flavor: str) -> list[tuple[bool, str]]:
 
     # C10 knot 자동층(선택). 마커 부재 = 미설치 정상 PASS, 존재 시 짝·정본·중복 검사.
     k_ok, k_why = _knot_check(instr_txt)
-    check(k_ok, f"C10 knot 관리블록 — {k_why}")
+    check(k_ok, f"C10 knot 관리블록 - {k_why}")
 
     return results
 
@@ -225,6 +240,24 @@ def _gemini_policy_ok(raw: str | None) -> tuple[bool, str]:
     if g.get("model") != "gemini-3.1-pro-high":
         return False, f"gemini model이 pro-high 아님({g.get('model')})"
     return True, ""
+
+
+def _readonly_worker_problems(raw: str, roles: list[str]) -> list[str]:
+    try:
+        workers = (json.loads(raw).get("workers") or {})
+    except Exception as e:  # noqa: BLE001
+        return [f"backends 파싱 실패: {e}"]
+    problems: list[str] = []
+    for role in roles:
+        rec = workers.get(role)
+        if not isinstance(rec, dict):
+            problems.append(f"{role}: worker 없음")
+            continue
+        if rec.get("call_type") != "native" and rec.get("write_policy") != "none":
+            problems.append(f"{role}: write_policy none 아님")
+        if rec.get("call_type") == "native" and rec.get("write_policy", "none") != "none":
+            problems.append(f"{role}: native write_policy none 아님")
+    return problems
 
 
 def _backends_problems(raw: str, flavor: str, target: Path) -> list[str]:
@@ -389,7 +422,7 @@ def run_repo_checks(catalog: Path, plugin: Path) -> list[tuple[str, str]]:
 
     # R5 루트 plugin.json(Antigravity 호스트) — 로딩 경로 미확정이라 부재 시 WARN
     emit("PASS" if (catalog / "plugin.json").is_file() else "WARN",
-         "R5 루트 plugin.json (Antigravity 호스트; 부재 시 KI-2 — 머지 전 실설치 검증)")
+         "R5 루트 plugin.json (Antigravity 호스트; 부재 시 KI-2 - 머지 전 실설치 검증)")
 
     return out
 
@@ -411,7 +444,7 @@ def main() -> None:
             failed += status == "FAIL"
             warned += status == "WARN"
         if failed:
-            print(f"\n  {failed}개 FAIL — 배포 표면이 불완전합니다.")
+            print(f"\n  {failed}개 FAIL - 배포 표면이 불완전합니다.")
             sys.exit(1)
         tail = f" (WARN {warned}개)" if warned else ""
         print(f"\n  repo 점검 PASS ({len(rresults)}개){tail}.")
@@ -431,7 +464,7 @@ def main() -> None:
         print(f"   [{'PASS' if ok else 'FAIL'}] {msg}")
         failed += not ok
     if failed:
-        print(f"\n  {failed}개 FAIL — 생성 결과가 불완전합니다.")
+        print(f"\n  {failed}개 FAIL - 생성 결과가 불완전합니다.")
         sys.exit(1)
     print(f"\n  전부 PASS ({len(results)}개).")
 

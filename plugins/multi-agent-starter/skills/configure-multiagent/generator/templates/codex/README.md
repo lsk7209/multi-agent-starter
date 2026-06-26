@@ -6,9 +6,10 @@ Codex를 오케스트레이터로 두고 Codex·Claude·Gemini를 필요할 때 
 
 - **Orchestrator = Codex 세션** (이 폴더 안에서 실행 시 `AGENTS.md` 적용)
 - **Workers** = 별도 worker/model 호출. 모두 승인 게이트 통과 필요.
-  - `codex-main` — 구현·코드 분석·테스트·로컬 검증·이미지 생성
-  - `claude-critic` — Codex 산출물 리뷰·비평
-  - `gemini` — 이미지·긴 문서·제3자 시각의 검토
+  - `claude-main` — 앱인토스 기획·콘텐츠 전략·E-E-A-T 판단
+  - `codex-main` — WordPress 반영·스크립트·이미지 생성·로컬 검증
+  - `codex-critic` — 애드센스 정책 위반·결함·차단 요소 비평
+  - `gemini` — 영상·스크린샷·50페이지+ 장문·시각 정합성 검토
 - **Memory = filesystem.** 런타임 상태 없음. 모든 결정·승인·검증이 파일로 남는다.
 
 ## 폴더 구조
@@ -53,7 +54,7 @@ codex
 
 자연어로 새 작업 요청:
 
-> "새 작업 만들어줘. 목표는 ○○이고 claude-critic 검수가 필요할 것 같아."
+> "새 작업 만들어줘. 목표는 ○○이고 codex-critic 검수가 필요할 것 같아."
 
 Orchestrator가 `_templates/task-folder.md` 가이드에 따라 작업 폴더 생성 → worker 승인 요청 → 진행.
 
@@ -73,6 +74,7 @@ MAT_ROOT=<설치한-폴더> mat
 |------|-----------|
 | 모든 worker 호출 전 승인 | `task.md`의 `workers_approved` 필드 |
 | 외부/유료 모델 호출 전 별도 승인 | `AGENTS.md` External/Paid Model Approval |
+| 스킬 수급 게이트 | `있음(사용) / 부족(개선) / 없음(개발)` 판단 후 등록 전 승인 |
 | 측정 가능한 컨텍스트 한도 | `wc -m` / `wc -w` |
 | append-only 로그 | `log.md` 수정·삭제 금지 |
 | 최소 worker set | `_shared/routing.md` decision tree |

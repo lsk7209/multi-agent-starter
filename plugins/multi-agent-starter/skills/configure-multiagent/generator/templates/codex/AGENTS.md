@@ -13,12 +13,13 @@
 ```
 Orchestrator (Codex session, internal reasoning)
 └── Worker Pool (separate worker/model calls — approval required)
-    ├── codex-main      bounded implementation · analysis · tests · local verification · image generation
-    ├── claude-critic   Codex output review · adversarial critique
-    └── gemini          multimodal · long document · third-party perspective
+    ├── claude-main     planner · AppsInToss planning · content strategy · E-E-A-T judgment
+    ├── codex-main      executor · WordPress changes · scripts · image generation · local verification
+    ├── codex-critic    critic · AdSense policy review · defect and blocker detection
+    └── gemini          long-form/visual · screenshots · video · 50p+ documents
 ```
 
-**Important**: Codex Orchestrator's internal reasoning is not a worker. A separate `codex-main`, `claude-critic`, or `gemini` call is a worker/model call and must pass the approval gate for the task.
+**Important**: Codex Orchestrator's internal reasoning is not a worker. A separate `claude-main`, `codex-main`, `codex-critic`, or `gemini` call is a worker/model call and must pass the approval gate for the task.
 
 ## Operating Principles
 
@@ -91,19 +92,25 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ## Task Lifecycle
 
 1. Create `tasks/<task-name>/task.md` (`status: pending`).
-2. Read `_shared/routing.md` and choose the minimum worker set.
-3. Confirm **target_repo** when the task will produce external files:
+2. Run the skill supply gate:
+   - Classify required skills as `있음(사용) / 부족(개선) / 없음(개발)`.
+   - Reuse available skills autonomously. Known candidates: `ait-builder`, `blog-optimizer`, `title-generator`, `adsense-optimizer`.
+   - If a skill must be improved or newly developed, route it through critic verification before adoption.
+   - Permanent registration in the skill pool is irreversible and requires explicit user approval.
+3. Read `_shared/routing.md` and choose the minimum worker set.
+4. Confirm **target_repo** when the task will produce external files:
    - If `codex-main` is planned, or the task creates code, docs, or images for another repo, ask for `target_repo` before filling `task.md`.
    - If the user says there is no external target, or the task is analysis/review/planning only, keep outputs under `tasks/<task>/artifacts/`.
    - If the user already provided a path, do not ask again.
-4. Record explicit worker approvals in `task.md` before any worker call.
-5. Write each worker's brief **exactly at `tasks/<task>/workers/<role>/brief.md`** (Korean <= 1200 chars / English <= 240 words). Use a per-worker folder — do NOT flatten to `<role>_brief.md`.
-6. Run the approved worker and save the original response **at `tasks/<task>/workers/<role>/result.md`** (same per-worker folder).
-7. Execute the `result.md` Verification Checklist.
-8. Append verification results to `log.md` with `[VERIFICATION]`. When the task is finished, update `status` in `task.md` to `done`.
-9. On completion, append reusable lessons only when they are genuinely reusable:
-   - System-level lessons: `_shared/learnings.md`
-   - Project-specific lessons: `_local/learnings.md` (not loaded unless explicitly requested)
+5. Record explicit worker approvals in `task.md` before any worker call.
+6. Write each worker's brief **exactly at `tasks/<task>/workers/<role>/brief.md`** (Korean <= 1200 chars / English <= 240 words). Use a per-worker folder — do NOT flatten to `<role>_brief.md`.
+7. Run the approved worker and save the original response **at `tasks/<task>/workers/<role>/result.md`** (same per-worker folder).
+8. Execute the `result.md` Verification Checklist.
+9. For improvement tasks, run an Act-Observe-Decide verification loop until quality passes, max 3 loops, or token/time budget is reached. For 0→1 creation tasks, keep the loop off or minimal unless verification fails.
+10. Append verification results to `log.md` with `[VERIFICATION]`. When the task is finished, update `status` in `task.md` to `done`.
+11. On completion, append reusable lessons only when they are genuinely reusable:
+    - System-level lessons: `_shared/learnings.md`
+    - Project-specific lessons: `_local/learnings.md` (not loaded unless explicitly requested)
 
 > When resuming an existing task, start with `_shared/orchestrator-rules.md` section 3 re-entry protocol, not step 1.
 
@@ -131,6 +138,13 @@ If `context.md` exceeds the limit, append history to `log.md`, then keep only th
 - Worker approval is task-specific and includes purpose and any external write scope.
 - Codex Orchestrator internal reasoning does not require approval.
 - External paid model tools still require explicit user approval even if the task is already created.
+- Drafting, review, diagnosis, local validation, and non-publishing recommendations are autonomous once worker/tool approval rules are satisfied.
+- Irreversible actions require explicit user approval at the single point immediately before the action:
+  - publishing or deployment
+  - deletion
+  - payment or purchase
+  - permanent skill pool registration
+  - system settings, constitution, or policy changes
 
 ## Verification
 
@@ -152,8 +166,9 @@ Default checks:
 
 | Worker | Default write permission | External repo write |
 |--------|--------------------------|---------------------|
+| claude-main | None; Orchestrator records response | Never |
 | codex-main | `tasks/<task>/` outputs/diffs | Conditional |
-| claude-critic | None; Orchestrator records response | Never |
+| codex-critic | None; Orchestrator records response | Never |
 | gemini | None; Orchestrator records response | Never |
 
 ### `write_scope` Values

@@ -20,7 +20,7 @@
 | flavor | 오케스트레이터 | 워커 풀 |
 |--------|----------------|---------|
 | `claude` | Claude Code 세션 | claude-main · codex-main · codex-critic · gemini |
-| `codex`  | Codex 세션 | codex-main · claude-critic · gemini |
+| `codex`  | Codex 세션 | claude-main · codex-main · codex-critic · gemini |
 | `antigravity` | Antigravity 세션 (Gemini 3.1 Pro High) | claude-main · codex-main · codex-critic (멀티모달은 오케스트레이터 직접) |
 
 생성되는 시스템에 포함되는 것:

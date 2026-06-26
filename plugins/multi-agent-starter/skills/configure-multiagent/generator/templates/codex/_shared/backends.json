@@ -3,14 +3,7 @@
   "flavor": "codex",
   "multiagent_root_env": "MULTIAGENT_ROOT",
   "workers": {
-    "codex-main": {
-      "model": "codex-default",
-      "call_type": "native",
-      "native": { "subagent_type": "codex-main", "prompt_source": "brief", "model_alias": "codex-default" },
-      "approval_class": "worker",
-      "result_capture": "orchestrator"
-    },
-    "claude-critic": {
+    "claude-main": {
       "model": "host-default",
       "call_type": "cli",
       "brief_mode": "content",
@@ -24,6 +17,21 @@
       "approval_class": "worker",
       "result_capture": "envelope",
       "timeout": 300
+    },
+    "codex-main": {
+      "model": "codex-default",
+      "call_type": "native",
+      "native": { "subagent_type": "codex-main", "prompt_source": "brief", "model_alias": "codex-default" },
+      "approval_class": "worker",
+      "result_capture": "orchestrator"
+    },
+    "codex-critic": {
+      "model": "codex-default",
+      "call_type": "native",
+      "native": { "subagent_type": "codex-critic", "prompt_source": "brief", "model_alias": "codex-default" },
+      "approval_class": "worker",
+      "result_capture": "orchestrator",
+      "write_policy": "none"
     },
     "gemini": {
       "model": "gemini-3.1-pro-high",

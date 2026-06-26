@@ -21,6 +21,6 @@
 <!-- 이 아래부터 교훈 추가 -->
 
 ## [2026-06-01] [codex-fork]
-**교훈**: Codex가 Orchestrator인 fork에서는 산출물 리뷰 worker를 Codex 자기검수로 두지 말고 `claude-critic`으로 분리해야 독립 검토의 의미가 유지된다.
+**교훈**: 콘텐츠/SEO 운영팀 fork에서는 `codex-critic`을 read-only 비평가로 제한하고, never-trust-upstream 검증을 Orchestrator가 수행해야 정책·결함 검토의 의미가 유지된다.
 **근거**: 사용자 결정에 따라 원본 MultiAgent의 critic 역할을 Codex 버전에 맞게 재설계했다.
 **worker**: orchestrator

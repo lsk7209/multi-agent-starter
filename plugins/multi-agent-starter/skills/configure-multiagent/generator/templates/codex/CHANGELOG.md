@@ -2,6 +2,18 @@
 
 이 파일은 multi-agent-starter (Codex flavor) orchestration 시스템의 주요 변경을 기록한다.
 
+## [0.3.0] - 2026-06-26
+
+Codex flavor를 콘텐츠/SEO 운영팀 템플릿으로 재정의했다.
+
+### Changed
+
+- worker pool을 `claude-main`(기획가), `codex-main`(실행가), `codex-critic`(비평가), `gemini`(장문/시각) 4역할로 정리.
+- `_shared/routing.md`를 앱인토스 기획, 콘텐츠 전략, WordPress 반영, 애드센스 정책 검수, 장문/시각 검토 기준으로 교체.
+- `_shared/backends.json`에 `claude-main`과 read-only `codex-critic`을 명시.
+- `_shared/approval-policy.md`에 게시/배포, 삭제, 결제, 스킬 풀 등록, 시스템 설정·헌법 변경의 비가역 승인 게이트를 추가.
+- `_shared/orchestrator-rules.md`에 스킬 수급 게이트와 Act-Observe-Decide 루프 종료 조건을 추가.
+
 ## [0.2.0] - 2026-06-10
 
 카파시(Karpathy) 4원칙을 층별로 도입. 기존 규칙과 충돌 없음(보강).
