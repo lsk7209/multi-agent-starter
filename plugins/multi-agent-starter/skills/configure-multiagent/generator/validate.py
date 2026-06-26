@@ -149,7 +149,8 @@ def run_checks(target: Path, flavor: str) -> list[tuple[bool, str]]:
             w for w in pool
             if (w not in routing) or (w not in instr_txt) or (f'"{w}"' not in (read(target, "_shared/backends.json") or ""))
         ]
-        check(not missing_pool, f"C8 콘텐츠/SEO 워커풀 4역할 존재 (없음: {missing_pool or '-'})")
+        team_marker = ("5-person operating team" in instr_txt) or ("5인 운영팀" in routing)
+        check((not missing_pool) and team_marker, f"C8 콘텐츠/SEO 5인 운영팀 존재 (없음: {missing_pool or '-'}, team_marker={team_marker})")
     else:
         check(cfg["main_worker"] in routing, f"C8 주 워커 '{cfg['main_worker']}' routing에 존재")
     if cfg["forbidden_worker"]:

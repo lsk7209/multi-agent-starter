@@ -7,7 +7,7 @@
 | ID | 불변식 |
 |----|--------|
 | INV1 | `write_scope` 값 집합이 `AGENTS.md`, `routing.md`, `worker-brief.md`, `task-folder.md`에서 동일 |
-| INV2 | 콘텐츠/SEO worker pool 4역할(`claude-main`, `codex-main`, `codex-critic`, `gemini`)이 `AGENTS.md`, `routing.md`, `backends.json`에 존재 |
+| INV2 | 콘텐츠/SEO 5인 운영팀(Orchestrator + `claude-main`, `codex-main`, `codex-critic`, `gemini`)이 `AGENTS.md`, `routing.md`, `backends.json`에 존재 |
 | INV3 | read-only worker(`claude-main`, `codex-critic`, `gemini`)가 외부 repo 쓰기 권한을 갖지 않음 |
 | INV4 | log 태그가 정확히 `DECISION | WORKER_CALL | VERIFICATION | ERROR | APPROVAL | COMPLETE` 6종 |
 | INV5 | context 한도 1500자, brief 한도 1200자가 정본 문서와 템플릿에서 일치 |
@@ -29,7 +29,8 @@ echo "INV1 tasks-only 분포"
 grep -l 'tasks-only' "$ROOT/AGENTS.md" "$ROOT/_shared/routing.md" \
   "$ROOT/_templates/worker-brief.md" "$ROOT/_templates/task-folder.md"
 
-echo "INV2 콘텐츠/SEO worker pool 4역할"
+echo "INV2 콘텐츠/SEO 5인 운영팀"
+grep -q '5-person operating team\|5인 운영팀' "$ROOT/AGENTS.md" "$ROOT/_shared/routing.md" && echo " 5-person team PASS" || echo " 5-person team FAIL"
 for w in claude-main codex-main codex-critic gemini; do
   grep -q "$w" "$ROOT/AGENTS.md" && echo " AGENTS $w PASS" || echo " AGENTS $w FAIL"
   grep -q "$w" "$ROOT/_shared/routing.md" && echo " routing $w PASS" || echo " routing $w FAIL"

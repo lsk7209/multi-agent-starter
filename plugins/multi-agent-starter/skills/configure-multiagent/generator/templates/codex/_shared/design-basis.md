@@ -19,6 +19,7 @@
 | Append-only + provenance | log.md append-only, 태그 6종 | 로그 삭제·수정 금지 |
 | Never trust upstream | worker result 검증 후 채택 | critic/gemini 출력도 사실검증 |
 | Adversarial review | `codex-critic` read-only 비평 | 정책·결함 차단 요소를 통과 전 해소 |
+| 5인 운영팀 | Orchestrator + 4 workers | 팀은 고정, 호출은 최소 set |
 | 최소 worker set | routing.md decision tree | 모든 worker 기본 호출 금지 |
 | Fan-in 충돌 해소 | 출처 병기, 사실검증, `[DECISION]` | 다수결 금지 |
 | Skill supply gate | 있음/부족/없음 판단 | 영구 등록은 사용자 승인 |
@@ -33,6 +34,7 @@
 
 - **D1 write_scope 값 집합** = `none | tasks-only | "패턴"`. `tasks-only`는 `tasks/<task>/` 내부만 쓰는 기본값이다.
 - **D2 worker pool** = Codex 버전은 콘텐츠/SEO 운영팀 기준 4역할을 사용한다. `claude-main`은 기획가, `codex-main`은 실행가, `codex-critic`은 read-only 비평가, `gemini`는 장문/시각 검토자다.
+- **D2a 5인 운영팀** = 실제 운영 단위는 Codex Orchestrator 팀장 1명 + worker 4명이다. 사용자가 "멀티에이전트로 이 사이트..."라고 요청하면 이 팀 구성을 적용하되, worker 호출은 최소 set과 승인 게이트를 따른다.
 - **D3 codex-critic 선행조건** = 리뷰 대상 산출물 경로가 존재해야 한다. 대상은 `claude-main`/`codex-main result.md`, Orchestrator 산출물·기존 코드·문서·소스도 가능하다.
 - **D4 gemini 정책** = 백엔드 Antigravity `agy` CLI(`_shared/backends.json` 정본, 디스패처 `call_worker.sh`). 기본 `gemini-3.1-pro-high`, 빠른 경로 `gemini-3-flash`/`pro-low`, 폴백 `api`. 옛 `mcp__gemini-pro__*` 프록시 브리지 폐기. `pro-high` 제외 사유(옛 프록시 400)는 agy엔 비해당(2026-06-02 실증). agy 모델은 전역·계정단위라 gemini 전용 전역을 pro-high로 운용.
 - **D5 Orchestrator** = Codex 현재 세션이 단일 Orchestrator다. 별도 long-lived supervisor worker나 worker 재귀 위임 계층은 쓰지 않는다.

@@ -12,7 +12,7 @@ description: Use when the user wants to set up / scaffold / install a file-based
 
 1. **flavor 확인** — 사용자에게 묻는다(또는 현재 호스트로 제안):
    - `claude` — Claude Code 오케스트레이터 (워커: claude-main / codex-main / codex-critic / gemini)
-   - `codex` — Codex 오케스트레이터 (워커: claude-main / codex-main / codex-critic / gemini)
+   - `codex` — Codex 오케스트레이터 5인 콘텐츠/SEO 운영팀 (팀장 Codex + 워커: claude-main / codex-main / codex-critic / gemini)
    - `antigravity` — Antigravity 오케스트레이터 (Gemini 3.1 Pro High; 워커: claude-main / codex-main / codex-critic, 멀티모달은 오케스트레이터 직접)
 2. **대상 폴더 확인** — 어디에 설치할지 묻는다. (상위 폴더 오인 주의 — 정확한 경로를 확인받는다.)
 3. **생성기 위치** — `generator/`는 **이 SKILL.md와 같은 폴더 안**에 있다(스킬 자기완결). 호스트별 분기 불필요 — 이 스킬 폴더 기준 `./generator/init.py`. (Claude는 `$CLAUDE_PLUGIN_ROOT/skills/configure-multiagent/generator/init.py`로 해석됨.)

@@ -5,6 +5,7 @@ Codex를 오케스트레이터로 두고 Codex·Claude·Gemini를 필요할 때 
 ## 핵심 아이디어
 
 - **Orchestrator = Codex 세션** (이 폴더 안에서 실행 시 `AGENTS.md` 적용)
+- **5인 운영팀** = Codex Orchestrator 팀장 + `claude-main` 기획가 + `codex-main` 실행가 + `codex-critic` 비평가 + `gemini` 장문/시각 검토자.
 - **Workers** = 별도 worker/model 호출. 모두 승인 게이트 통과 필요.
   - `claude-main` — 앱인토스 기획·콘텐츠 전략·E-E-A-T 판단
   - `codex-main` — WordPress 반영·스크립트·이미지 생성·로컬 검증
@@ -55,6 +56,10 @@ codex
 자연어로 새 작업 요청:
 
 > "새 작업 만들어줘. 목표는 ○○이고 codex-critic 검수가 필요할 것 같아."
+
+바로 쓰는 명령:
+
+> "멀티에이전트로 이 사이트를 애드센스 승인 가능 상태로 최적화해줘. 개선형이니 루프 ON. 게시 전에 나한테 승인 받아."
 
 Orchestrator가 `_templates/task-folder.md` 가이드에 따라 작업 폴더 생성 → worker 승인 요청 → 진행.
 

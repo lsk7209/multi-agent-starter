@@ -14,6 +14,13 @@ Codex flavor를 콘텐츠/SEO 운영팀 템플릿으로 재정의했다.
 - `_shared/approval-policy.md`에 게시/배포, 삭제, 결제, 스킬 풀 등록, 시스템 설정·헌법 변경의 비가역 승인 게이트를 추가.
 - `_shared/orchestrator-rules.md`에 스킬 수급 게이트와 Act-Observe-Decide 루프 종료 조건을 추가.
 
+## [0.3.1] - 2026-06-26
+
+### Changed
+
+- Codex flavor의 운영 단위를 "Codex Orchestrator 팀장 + 4 workers"의 5인 콘텐츠/SEO 운영팀으로 명시.
+- 사용자가 "멀티에이전트로 이 사이트..."라고 요청할 때 작업 폴더, 스킬 수급 게이트, 최소 worker set, 승인 게이트로 이어지도록 안내를 보강.
+
 ## [0.2.0] - 2026-06-10
 
 카파시(Karpathy) 4원칙을 층별로 도입. 기존 규칙과 충돌 없음(보강).

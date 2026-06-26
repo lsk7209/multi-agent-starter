@@ -11,15 +11,18 @@
 ## Architecture
 
 ```
-Orchestrator (Codex session, internal reasoning)
+5-person operating team
+├── 1. Codex Orchestrator  team lead · task framing · skill gate · fan-in · final decision
 └── Worker Pool (separate worker/model calls — approval required)
-    ├── claude-main     planner · AppsInToss planning · content strategy · E-E-A-T judgment
-    ├── codex-main      executor · WordPress changes · scripts · image generation · local verification
-    ├── codex-critic    critic · AdSense policy review · defect and blocker detection
-    └── gemini          long-form/visual · screenshots · video · 50p+ documents
+    ├── 2. claude-main     planner · AppsInToss planning · content strategy · E-E-A-T judgment
+    ├── 3. codex-main      executor · WordPress changes · scripts · image generation · local verification
+    ├── 4. codex-critic    critic · AdSense policy review · defect and blocker detection
+    └── 5. gemini          long-form/visual · screenshots · video · 50p+ documents
 ```
 
 **Important**: Codex Orchestrator's internal reasoning is not a worker. A separate `claude-main`, `codex-main`, `codex-critic`, or `gemini` call is a worker/model call and must pass the approval gate for the task.
+
+When the user says "멀티에이전트로 이 사이트를 ..." or asks for a site/content/SEO goal, treat it as a request to use this 5-person operating team. Create or reuse a task folder, run the skill gate, choose the minimum worker set, and stop before any worker call or irreversible action that lacks approval.
 
 ## Operating Principles
 

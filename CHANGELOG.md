@@ -5,6 +5,15 @@
 (정본: `generator/templates/{claude,codex}/CHANGELOG.md`)를 참조한다.
 형식은 [Keep a Changelog](https://keepachangelog.com/), 버전은 [Semantic Versioning](https://semver.org/lang/ko/)을 따른다.
 
+## [2.1.2] - 2026-06-26
+
+### Changed
+- **codex flavor를 5인 콘텐츠/SEO 운영팀으로 보강.**
+  Codex Orchestrator를 팀장으로 명시하고, `claude-main` 기획가 · `codex-main` 실행가 ·
+  `codex-critic` 비평가 · `gemini` 장문/시각 검토자 구조를 생성 템플릿과 검증 불변식에 반영.
+- 사용자가 "멀티에이전트로 이 사이트..."라고 요청할 때 스킬 수급 게이트, 최소 worker set,
+  승인 게이트로 이어지도록 codex 템플릿 안내를 보강.
+
 ## [2.1.1] - 2026-06-25
 
 ### Fixed
